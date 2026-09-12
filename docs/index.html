@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SIAP-Hadir</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{ display:flex; justify-content:center; min-height:100vh; }
+  .app{ width:100%; max-width:460px; background:var(--bg); min-height:100vh; display:flex; flex-direction:column; }
+  .app-body{ flex:1; padding-bottom:90px; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* Login */
+  #screen-login{ background:var(--navy); min-height:100vh; }
+  .login-wrap{ min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding:0 30px; color:#fff; }
+  .login-badge{ width:60px; height:60px; border-radius:16px; background:var(--gold); display:flex; align-items:center; justify-content:center; margin-bottom:18px; }
+  .login-badge svg{ width:30px; height:30px; color:var(--navy); }
+  .login-title{ font-size:22px; font-weight:700; margin-bottom:4px; }
+  .login-sub{ font-size:13px; color:#AFC0CE; margin-bottom:28px; line-height:1.5; }
+  .field{ margin-bottom:14px; }
+  .field label{ font-size:12px; color:#C7D3DE; display:block; margin-bottom:6px; }
+  .field input{ width:100%; padding:13px 14px; border-radius:10px; border:1px solid #33506E; background:#1B3550; color:#fff; font-size:14px; outline:none; }
+  .field input::placeholder{ color:#7891A5; }
+  .login-error{ background:rgba(178,63,63,0.2); border:1px solid var(--danger); color:#fff; padding:10px 12px; border-radius:8px; font-size:12.5px; margin-bottom:14px; }
+  .login-foot{ text-align:center; font-size:11px; color:#7891A5; margin-top:20px; line-height:1.6; }
+
+  /* Header */
+  .top-header{ background:var(--navy); color:#fff; padding:22px 20px 26px; border-radius:0 0 22px 22px; }
+  .top-header .greet{ font-size:13px; color:#C7D3DE; margin-bottom:4px; }
+  .top-header .name{ font-size:18px; font-weight:600; }
+  .top-header .nip{ font-size:12px; color:#9FB0C0; margin-top:2px; }
+  .content{ padding:18px; }
+  .section-title{ font-size:14px; font-weight:600; margin:18px 0 10px; }
+
+  /* Home */
+  .clock-card{ background:var(--navy-2); border-radius:var(--radius); padding:18px; color:#fff; display:flex; justify-content:space-between; align-items:center; margin-top:-40px; position:relative; }
+  .clock-time{ font-size:25px; font-weight:700; }
+  .clock-date{ font-size:12px; color:#B9C8D6; margin-top:2px; }
+  .clock-status{ background:rgba(255,255,255,0.14); padding:5px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .absen-cta{ margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .absen-cta .lbl{ font-size:12.5px; color:var(--text-sec); margin-bottom:2px; }
+  .absen-cta .val{ font-size:14.5px; font-weight:600; }
+  .stat-row{ display:flex; gap:10px; margin-top:14px; }
+  .stat-box{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+  .stat-box .num{ font-size:18px; font-weight:700; color:var(--navy); }
+  .stat-box .lbl{ font-size:10.5px; color:var(--text-sec); margin-top:2px; }
+  .activity-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
+  .activity-item:last-child{ border-bottom:none; }
+  .activity-item .day{ font-size:13px; font-weight:600; }
+  .activity-item .time{ font-size:11.5px; color:var(--text-sec); margin-top:1px; }
+  .empty{ text-align:center; color:var(--text-mute); font-size:12.5px; padding:14px 0; }
+
+  /* Absen */
+  .absen-header{ padding:20px 18px 6px; }
+  .absen-header .t{ font-size:18px; font-weight:700; }
+  .absen-header .s{ font-size:12.5px; color:var(--text-sec); margin-top:2px; }
+  .step-panel{ padding:14px 18px 10px; }
+  .loc-box{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .loc-icon{ width:38px; height:38px; border-radius:10px; background:var(--navy); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .loc-icon svg{ width:19px; height:19px; color:#fff; }
+  .loc-box .t1{ font-size:13px; font-weight:600; }
+  .loc-box .t2{ font-size:11.5px; color:var(--text-sec); margin-top:2px; }
+  .loc-box.ok{ border-color:var(--success); background:var(--success-bg); }
+  .loc-box.ok .loc-icon{ background:var(--success); }
+  .loc-box.warn{ border-color:var(--warn); background:var(--warn-bg); }
+  .loc-box.warn .loc-icon{ background:var(--warn); }
+  .camera-wrap{ background:#0F1B28; border-radius:var(--radius); overflow:hidden; position:relative; margin-bottom:14px; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; }
+  .camera-wrap video, .camera-wrap canvas{ width:100%; height:100%; object-fit:cover; }
+  .camera-hint{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); color:#fff; font-size:11.5px; background:rgba(0,0,0,0.45); padding:5px 12px; border-radius:20px; }
+  .success-wrap{ padding:46px 24px; text-align:center; }
+  .success-icon{ width:60px; height:60px; border-radius:50%; background:var(--success-bg); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+  .success-icon svg{ width:28px; height:28px; color:var(--success); }
+  .success-title{ font-size:17px; font-weight:700; margin-bottom:6px; }
+  .success-sub{ font-size:13px; color:var(--text-sec); line-height:1.6; }
+  .success-card{ margin-top:18px; text-align:left; }
+  .success-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+  .success-row .k{ color:var(--text-sec); }
+  .success-row .v{ font-weight:600; }
+
+  /* Riwayat / Izin */
+  .filter-row{ display:flex; gap:8px; margin-bottom:6px; overflow-x:auto; }
+  .filter-chip{ padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--surface); color:var(--text-sec); white-space:nowrap; }
+  .filter-chip.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .izin-item{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; }
+  .izin-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .izin-jenis{ font-size:13.5px; font-weight:600; text-transform:capitalize; }
+  .izin-tgl{ font-size:11.5px; color:var(--text-sec); margin-top:2px; }
+  .izin-alasan{ font-size:12px; color:var(--text-sec); line-height:1.5; }
+
+  /* Form modal sederhana */
+  .modal-bg{ position:fixed; inset:0; background:rgba(20,40,63,0.45); display:flex; align-items:flex-end; z-index:200; }
+  .modal-bg.hidden{ display:none; }
+  .modal-sheet{ width:100%; max-width:460px; margin:0 auto; background:var(--surface); border-radius:20px 20px 0 0; padding:22px 20px 26px; max-height:85vh; overflow-y:auto; }
+  .modal-title{ font-size:16px; font-weight:700; margin-bottom:16px; }
+  .field-group{ margin-bottom:12px; }
+  .field-group label{ font-size:12.5px; color:var(--text-sec); display:block; margin-bottom:5px; }
+  .field-group input, .field-group select, .field-group textarea{
+    width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); font-size:13.5px; background:var(--surface);
+  }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field-group{ flex:1; }
+  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
+  .modal-actions button{ flex:1; padding:12px; border-radius:10px; font-size:13.5px; font-weight:700; border:none; }
+  .modal-actions .cancel{ background:var(--bg); color:var(--text-sec); }
+  .modal-actions .submit{ background:var(--navy); color:#fff; }
+
+  /* Bottom nav */
+  .bottom-nav{ position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:460px; height:74px; background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-around; padding-bottom:10px; }
+  .nav-item{ display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none; color:var(--text-mute); font-size:10.5px; font-weight:500; width:64px; }
+  .nav-item svg{ width:21px; height:21px; }
+  .nav-item.active{ color:var(--navy); }
+
+  /* Profil */
+  .profil-head{ display:flex; flex-direction:column; align-items:center; padding:26px 20px 20px; }
+  .avatar{ width:72px; height:72px; border-radius:50%; background:var(--gold-light); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--navy); margin-bottom:12px; }
+  .profil-name{ font-size:16px; font-weight:700; }
+  .profil-jab{ font-size:12.5px; color:var(--text-sec); margin-top:2px; }
+  .info-row{ display:flex; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .info-row:last-child{ border-bottom:none; }
+  .info-row .k{ color:var(--text-sec); }
+  .info-row .v{ font-weight:600; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LOGIN -->
+  <div class="screen active" id="screen-login">
+    <div class="login-wrap">
+      <div class="login-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      </div>
+      <div class="login-title">SIAP-Hadir</div>
+      <div class="login-sub">Absensi digital kantor</div>
+      <div id="loginError" class="login-error hidden"></div>
+      <div class="field"><label>NIP</label><input id="inNip" type="text" placeholder="Masukkan NIP Anda"></div>
+      <div class="field"><label>Kata sandi</label><input id="inPass" type="password" placeholder="••••••••"></div>
+      <button class="btn-primary" style="background:var(--gold); color:var(--navy);" onclick="login()">Masuk</button>
+      <div class="login-foot">Lupa kata sandi? Hubungi admin kepegawaian.</div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="mainApp" class="hidden">
+    <div class="app-body" id="appBody">
+
+      <!-- HOME -->
+      <div class="screen" id="screen-home">
+        <div class="top-header">
+          <div class="greet" id="greetTime">Selamat datang,</div>
+          <div class="name" id="homeNama">-</div>
+          <div class="nip" id="homeNip">-</div>
+        </div>
+        <div class="content">
+          <div class="clock-card">
+            <div><div class="clock-time" id="jamBerjalan">--:--:--</div><div class="clock-date" id="tanggalHariIni">-</div></div>
+            <div class="clock-status" id="statusHariIni">Memuat…</div>
+          </div>
+          <div class="absen-cta">
+            <div><div class="lbl" id="absenLbl">Jam masuk hari ini</div><div class="val" id="absenVal">-</div></div>
+            <button class="btn-gold" id="btnAbsenCta" onclick="goTo('absen')">Absen</button>
+          </div>
+          <div class="stat-row">
+            <div class="stat-box"><div class="num" id="statHadir">0</div><div class="lbl">Hadir bulan ini</div></div>
+            <div class="stat-box"><div class="num" id="statTelat">0</div><div class="lbl">Telat</div></div>
+            <div class="stat-box"><div class="num" id="statIzin">0</div><div class="lbl">Izin/cuti</div></div>
+          </div>
+          <div class="section-title">Aktivitas terakhir</div>
+          <div class="card" id="aktivitasList"><div class="empty">Memuat riwayat…</div></div>
+        </div>
+      </div>
+
+      <!-- ABSEN -->
+      <div class="screen" id="screen-absen">
+        <div class="absen-header"><div class="t" id="absenJudul">Absen masuk</div><div class="s">Ikuti langkah verifikasi di bawah ini</div></div>
+
+        <div class="step-panel" id="absenStep1">
+          <div class="loc-box" id="locBox">
+            <div class="loc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+            <div><div class="t1" id="locT1">Mencari lokasi Anda</div><div class="t2" id="locT2">Pastikan GPS aktif</div></div>
+          </div>
+          <button class="btn-primary" onclick="mulaiCekLokasi()">Mulai cek lokasi</button>
+        </div>
+
+        <div class="step-panel hidden" id="absenStep2">
+          <div class="camera-wrap">
+            <video id="videoEl" autoplay playsinline muted></video>
+            <canvas id="canvasEl" class="hidden"></canvas>
+            <div class="camera-hint">Posisikan wajah di dalam bingkai</div>
+          </div>
+          <button class="btn-primary" id="btnAmbilFoto" onclick="ambilFotoDanKirim()">Ambil foto & absen</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="screen" id="screen-success">
+        <div class="success-wrap">
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div class="success-title" id="successTitle">Absen berhasil</div>
+          <div class="success-sub" id="successSub">Data kehadiran Anda telah tercatat.</div>
+          <div class="card success-card" id="successCard"></div>
+          <button class="btn-primary" style="margin-top:22px;" onclick="goTo('home')">Kembali ke beranda</button>
+        </div>
+      </div>
+
+      <!-- RIWAYAT -->
+      <div class="screen" id="screen-riwayat">
+        <div class="top-header" style="border-radius:0 0 22px 22px;"><div class="name" style="font-size:17px;">Riwayat kehadiran</div><div class="nip" id="riwayatBulanLabel">-</div></div>
+        <div class="content">
+          <div class="filter-row" id="riwayatFilter"></div>
+          <div class="card" id="riwayatList" style="margin-top:12px;"><div class="empty">Memuat…</div></div>
+        </div>
+      </div>
+
+      <!-- IZIN -->
+      <div class="screen" id="screen-izin">
+        <div class="top-header" style="border-radius:0 0 22px 22px;"><div class="name" style="font-size:17px;">Pengajuan izin</div><div class="nip">Izin, cuti, sakit, dinas luar</div></div>
+        <div class="content">
+          <button class="btn-gold" style="width:100%; margin-bottom:14px;" onclick="bukaFormIzin()">+ Ajukan baru</button>
+          <div id="izinList"><div class="empty">Memuat…</div></div>
+        </div>
+      </div>
+
+      <!-- PROFIL -->
+      <div class="screen" id="screen-profil">
+        <div class="profil-head">
+          <div class="avatar" id="profilAvatar">-</div>
+          <div class="profil-name" id="profilNama">-</div>
+          <div class="profil-jab" id="profilJab">-</div>
+        </div>
+        <div class="content" style="padding-top:0;">
+          <div class="card" id="profilInfo"></div>
+          <button class="btn-primary btn-outline" style="margin-top:16px;" onclick="logout()">Keluar akun</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottom-nav" id="bottomNav">
+      <button class="nav-item active" data-tab="home" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Beranda</button>
+      <button class="nav-item" data-tab="riwayat" onclick="goTo('riwayat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Riwayat</button>
+      <button class="nav-item" data-tab="absen" onclick="goTo('absen')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 3h6v4H9z"/></svg>Absen</button>
+      <button class="nav-item" data-tab="izin" onclick="goTo('izin')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/></svg>Izin</button>
+      <button class="nav-item" data-tab="profil" onclick="goTo('profil')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>Profil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal form izin -->
+<div class="modal-bg hidden" id="modalIzin">
+  <div class="modal-sheet">
+    <div class="modal-title">Ajukan izin</div>
+    <div class="field-group">
+      <label>Jenis</label>
+      <select id="fIzinJenis"><option value="izin">Izin</option><option value="cuti">Cuti</option><option value="sakit">Sakit</option><option value="dinas_luar">Dinas luar</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Mulai</label><input type="date" id="fIzinMulai"></div>
+      <div class="field-group"><label>Selesai</label><input type="date" id="fIzinSelesai"></div>
+    </div>
+    <div class="field-group"><label>Keterangan</label><textarea id="fIzinAlasan" rows="3" placeholder="Contoh: keperluan keluarga"></textarea></div>
+    <div class="modal-actions">
+      <button class="cancel" onclick="tutupModal('modalIzin')">Batal</button>
+      <button class="submit" onclick="kirimIzin()">Ajukan</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

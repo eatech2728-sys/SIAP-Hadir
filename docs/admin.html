@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIAP-Hadir — Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{ min-height:100vh; }
+  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--navy); }
+  .login-card{ width:340px; background:var(--surface); border-radius:16px; padding:30px 26px; }
+  .login-badge{ width:52px; height:52px; border-radius:14px; background:var(--gold); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .login-badge svg{ width:26px; height:26px; color:var(--navy); }
+  .login-title{ font-size:19px; font-weight:700; margin-bottom:2px; }
+  .login-sub{ font-size:12.5px; color:var(--text-sec); margin-bottom:22px; }
+  .field-group{ margin-bottom:13px; }
+  .field-group label{ font-size:12px; color:var(--text-sec); display:block; margin-bottom:5px; }
+  .field-group input, .field-group select, .field-group textarea{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); font-size:13.5px; }
+  .login-error{ background:var(--danger-bg); color:var(--danger); padding:9px 11px; border-radius:8px; font-size:12.5px; margin-bottom:12px; }
+
+  #adminApp{ display:none; min-height:100vh; }
+  .topbar{ background:var(--navy); color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
+  .topbar .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--gold); }
+  .topbar .userinfo{ font-size:12.5px; color:#C7D3DE; display:flex; align-items:center; gap:12px; }
+  .topbar button{ background:rgba(255,255,255,0.12); color:#fff; border:none; padding:7px 13px; border-radius:8px; font-size:12px; }
+
+  .tabbar{ display:flex; gap:6px; padding:14px 24px 0; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab-btn{ background:none; border:none; padding:10px 16px; font-size:13px; font-weight:600; color:var(--text-sec); border-bottom:2px solid transparent; white-space:nowrap; }
+  .tab-btn.active{ color:var(--navy); border-bottom-color:var(--navy); }
+
+  .wrap{ max-width:1000px; margin:0 auto; padding:22px 24px 60px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; justify-content:space-between; }
+  .toolbar-left{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type=date], input[type=month], select{ padding:9px 11px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  thead th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-sec); background:var(--bg); padding:11px 14px; }
+  tbody td{ padding:11px 14px; font-size:13px; border-top:1px solid var(--border); }
+  tbody tr:hover{ background:#FAFBFB; }
+  .pill-btn{ padding:6px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; margin-right:6px; }
+  .pill-btn.approve{ background:var(--success-bg); color:var(--success); }
+  .pill-btn.reject{ background:var(--danger-bg); color:var(--danger); }
+  .pill-btn.edit{ background:var(--bg); color:var(--text-sec); }
+  .stat-cards{ display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+  .stat-card{ flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .stat-card .num{ font-size:22px; font-weight:700; color:var(--navy); }
+  .stat-card .lbl{ font-size:12px; color:var(--text-sec); margin-top:3px; }
+
+  .modal-bg{ position:fixed; inset:0; background:rgba(20,40,63,0.45); display:flex; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.hidden{ display:none; }
+  .modal-card{ width:420px; max-width:92vw; background:var(--surface); border-radius:16px; padding:22px; max-height:88vh; overflow-y:auto; }
+  .modal-title{ font-size:16px; font-weight:700; margin-bottom:16px; }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field-group{ flex:1; }
+  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
+  .modal-actions button{ flex:1; padding:11px; border-radius:9px; font-size:13.5px; font-weight:700; border:none; }
+  .modal-actions .cancel{ background:var(--bg); color:var(--text-sec); }
+  .modal-actions .submit{ background:var(--navy); color:#fff; }
+  .empty{ text-align:center; color:var(--text-mute); font-size:13px; padding:30px 0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <div class="login-title">SIAP-Hadir</div>
+    <div class="login-sub">Masuk sebagai admin kepegawaian</div>
+    <div id="loginError" class="login-error hidden"></div>
+    <div class="field-group"><label>NIP</label><input id="inNip" type="text" placeholder="NIP admin"></div>
+    <div class="field-group"><label>Kata sandi</label><input id="inPass" type="password" placeholder="••••••••"></div>
+    <button class="btn-primary" onclick="login()">Masuk</button>
+    <p style="text-align:center; font-size:11.5px; color:var(--text-mute); margin-top:14px;">
+      Bukan admin? <a href="index.html" style="color:var(--navy);">Buka aplikasi pegawai</a>
+    </p>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> SIAP-Hadir · Admin</div>
+    <div class="userinfo"><span id="adminNama">-</span><button onclick="logout()">Keluar</button></div>
+  </div>
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="rekap" onclick="gantiTab('rekap')">Rekap Kehadiran</button>
+    <button class="tab-btn" data-tab="pegawai" onclick="gantiTab('pegawai')">Pegawai</button>
+    <button class="tab-btn" data-tab="izin" onclick="gantiTab('izin')">Pengajuan Izin</button>
+    <button class="tab-btn" data-tab="lokasi" onclick="gantiTab('lokasi')">Lokasi Kantor</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- REKAP -->
+    <div class="panel active" id="panel-rekap">
+      <div class="stat-cards" id="rekapStat"></div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input type="date" id="rekapTanggal" onchange="muatRekap()">
+        </div>
+        <button class="btn-gold" onclick="exportCsv()">Unduh rekap bulan ini (CSV)</button>
+      </div>
+      <table>
+        <thead><tr><th>Nama</th><th>NIP</th><th>Unit</th><th>Masuk</th><th>Status</th><th>Pulang</th><th>Radius</th></tr></thead>
+        <tbody id="rekapBody"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- PEGAWAI -->
+    <div class="panel" id="panel-pegawai">
+      <div class="toolbar"><div></div><button class="btn-gold" onclick="bukaFormPegawai()">+ Tambah pegawai</button></div>
+      <table>
+        <thead><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Unit</th><th>Jadwal</th><th>Status</th><th></th></tr></thead>
+        <tbody id="pegawaiBody"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- IZIN -->
+    <div class="panel" id="panel-izin">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select id="izinFilter" onchange="muatIzinAdmin()">
+            <option value="menunggu">Menunggu</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+            <option value="">Semua</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Nama</th><th>Jenis</th><th>Tanggal</th><th>Keterangan</th><th>Status</th><th></th></tr></thead>
+        <tbody id="izinBody"><tr><td colspan="6" class="empty">Memuat…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- LOKASI -->
+    <div class="panel" id="panel-lokasi">
+      <div class="modal-card" style="width:100%; max-width:420px; margin:0;">
+        <div class="modal-title">Titik lokasi kantor</div>
+        <div class="field-group"><label>Nama lokasi</label><input id="fLokasiNama" type="text"></div>
+        <div class="field-row">
+          <div class="field-group"><label>Latitude</label><input id="fLokasiLat" type="text"></div>
+          <div class="field-group"><label>Longitude</label><input id="fLokasiLng" type="text"></div>
+        </div>
+        <div class="field-group"><label>Radius toleransi (meter)</label><input id="fLokasiRadius" type="number"></div>
+        <button class="pill-btn edit" style="margin-bottom:14px;" onclick="gunakanLokasiSaatIni()">📍 Gunakan lokasi perangkat ini</button>
+        <button class="btn-primary" onclick="simpanLokasi()">Simpan lokasi kantor</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal tambah/edit pegawai -->
+<div class="modal-bg hidden" id="modalPegawai">
+  <div class="modal-card">
+    <div class="modal-title" id="modalPegawaiTitle">Tambah pegawai</div>
+    <input type="hidden" id="fPegawaiId">
+    <div class="field-row">
+      <div class="field-group"><label>NIP</label><input id="fNip" type="text"></div>
+      <div class="field-group"><label>Nama</label><input id="fNama" type="text"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Jabatan</label><input id="fJabatan" type="text"></div>
+      <div class="field-group"><label>Unit kerja</label><input id="fUnit" type="text"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Jam masuk</label><input id="fJamMasuk" type="time" value="07:30"></div>
+      <div class="field-group"><label>Jam pulang</label><input id="fJamPulang" type="time" value="16:00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Toleransi telat (menit)</label><input id="fToleransi" type="number" value="15"></div>
+      <div class="field-group"><label>Peran</label><select id="fRole"><option value="pegawai">Pegawai</option><option value="admin">Admin</option></select></div>
+    </div>
+    <div class="field-group"><label id="fPassLabel">Kata sandi awal</label><input id="fPassword" type="text" placeholder="Minimal 6 karakter"></div>
+    <div class="field-group" id="fStatusWrap" style="display:none;">
+      <label>Status</label>
+      <select id="fStatus"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" onclick="tutupModal('modalPegawai')">Batal</button>
+      <button class="submit" onclick="simpanPegawai()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
