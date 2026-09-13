@@ -5,7 +5,7 @@
 // sehingga tidak bisa dipalsukan dari sisi browser.
 // ============================================================
 
-let fbApp = null, fbAuth = null, fbDb = null, fbStorage = null, fbRtdb = null;
+let fbApp = null, fbAuth = null, fbDb = null, fbRtdb = null;
 let chatUid = null;
 let chatSudahSiap = false;
 let daftarKontakCache = [];
@@ -28,7 +28,6 @@ function initFirebaseChat() {
   fbApp = firebase.initializeApp(FIREBASE_CONFIG);
   fbAuth = firebase.auth();
   fbDb = firebase.firestore();
-  fbStorage = firebase.storage();
   fbRtdb = firebase.database();
   return true;
 }
@@ -258,16 +257,18 @@ function kirimGambarChat(ev) {
   ev.target.value = '';
   if (!file || !currentChatRef) return;
   if (!file.type.startsWith('image/')) { toast('File harus berupa gambar.', true); return; }
-  kompresGambar(file, blob => {
-    const path = 'chat-images/' + chatUid + '/' + Date.now() + '.jpg';
-    const ref = fbStorage.ref(path);
-    ref.put(blob).then(() => ref.getDownloadURL()).then(url => {
-      currentChatRef.collection('messages').add({ senderUid: chatUid, imageUrl: url, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      currentChatRef.set({ lastMessage: '📷 Foto', lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    }).catch(e => toast('Gagal mengirim gambar: ' + e.message, true));
+  const refSaatDikirim = currentChatRef; // jaga-jaga kalau pengguna pindah chat sebelum unggah selesai
+  toast('Mengirim gambar…');
+  kompresGambarKeBase64(file, base64 => {
+    call('uploadGambarChat', { base64 })
+      .then(r => {
+        refSaatDikirim.collection('messages').add({ senderUid: chatUid, imageUrl: r.url, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        refSaatDikirim.set({ lastMessage: '📷 Foto', lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      })
+      .catch(e => toast('Gagal mengirim gambar: ' + e.message, true));
   });
 }
-function kompresGambar(file, cb) {
+function kompresGambarKeBase64(file, cb) {
   const img = new Image();
   const reader = new FileReader();
   reader.onload = e => {
@@ -278,7 +279,7 @@ function kompresGambar(file, cb) {
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(cb, 'image/jpeg', 0.75);
+      cb(canvas.toDataURL('image/jpeg', 0.7)); // base64 data URL, dikirim ke Apps Script (bukan Firebase Storage)
     };
     img.src = e.target.result;
   };
