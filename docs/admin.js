@@ -2,7 +2,32 @@
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // (harus SAMA PERSIS dengan yang dipakai di app.js)
 // ============================================================
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxG8xOBUOijRMUoCtDyn2-hEBL5damM2uGK6BD31PJWFMcsfdpKT_8be6s5KdsCRmvN/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbz7ojUCq_yPlSZhQcr-jP_f6_4VIeG4y2RxUSX1JbsR77C1ZnXLMnhCDO1Bh1Do0fg/exec';
+
+// ---------- tema (terang/gelap/otomatis) ----------
+function terapkanTema(pref) {
+  let efektif = pref;
+  if (pref === 'auto') {
+    efektif = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', efektif);
+}
+function ubahTema(pref) {
+  localStorage.setItem('sh_theme', pref);
+  terapkanTema(pref);
+}
+function initTema() {
+  const pref = localStorage.getItem('sh_theme') || 'auto';
+  const sel = document.getElementById('selectTema');
+  if (sel) sel.value = pref;
+  terapkanTema(pref);
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if ((localStorage.getItem('sh_theme') || 'auto') === 'auto') terapkanTema('auto');
+    });
+  }
+}
+initTema();
 
 let token = localStorage.getItem('sh_token') || null;
 let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
@@ -91,15 +116,21 @@ function muatRekap() {
       <div class="stat-card"><div class="num">${rows.filter(r=>r.dalam_radius_masuk===0).length}</div><div class="lbl">Absen di luar radius</div></div>
     `;
     const body = document.getElementById('rekapBody');
-    if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Belum ada absensi pada tanggal ini.</td></tr>'; return; }
-    body.innerHTML = rows.map(r => `
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="8" class="empty">Belum ada absensi pada tanggal ini.</td></tr>'; return; }
+    body.innerHTML = rows.map(r => {
+      let wajahLabel = '<span style="color:var(--text-mute);">-</span>';
+      if (r.wajah_cocok_masuk === 1) wajahLabel = '<span class="badge hadir">Cocok</span>';
+      else if (r.wajah_cocok_masuk === 0) wajahLabel = '<span class="badge alpha">Tidak cocok</span>';
+      return `
       <tr>
         <td>${r.nama}</td><td>${r.nip}</td><td>${r.unit_kerja || '-'}</td>
         <td>${r.jam_masuk || '-'}</td>
-        <td><span class="badge ${r.status_masuk || 'alpha'}">${r.status_masuk === 'telat' ? 'Telat' : r.status_masuk === 'hadir' ? 'Hadir' : '-'}</span></td>
+        <td><span class="badge ${r.status_masuk || 'alpha'}">${r.status_masuk === 'telat' ? 'Telat' : r.status_masuk === 'hadir' ? 'Hadir' : r.status_masuk === 'dinas_luar' ? 'Dinas Luar' : '-'}</span></td>
         <td>${r.jam_pulang || '-'}</td>
         <td>${r.jarak_masuk != null && r.jarak_masuk !== '' ? Math.round(r.jarak_masuk) + ' m' : '-'} ${r.dalam_radius_masuk === 0 ? '⚠️' : ''}</td>
-      </tr>`).join('');
+        <td>${wajahLabel}</td>
+      </tr>`;
+    }).join('');
   }).catch(e => toast(e.message, true));
 }
 function exportCsv() {
@@ -141,6 +172,7 @@ function bukaFormPegawai() {
   document.getElementById('fPassword').value = '';
   document.getElementById('fPassLabel').textContent = 'Kata sandi awal';
   document.getElementById('fStatusWrap').style.display = 'none';
+  document.getElementById('fBiometrikWrap').style.display = 'none';
   document.getElementById('modalPegawai').classList.remove('hidden');
 }
 function editPegawai(p) {
@@ -158,7 +190,16 @@ function editPegawai(p) {
   document.getElementById('fPassLabel').textContent = 'Ganti kata sandi (kosongkan jika tidak diubah)';
   document.getElementById('fStatusWrap').style.display = 'block';
   document.getElementById('fStatus').value = p.status;
+  document.getElementById('fBiometrikWrap').style.display = 'block';
   document.getElementById('modalPegawai').classList.remove('hidden');
+}
+function cabutSemuaPerangkatPegawai() {
+  const id = document.getElementById('fPegawaiId').value;
+  if (!id) return;
+  if (!confirm('Cabut semua akses login biometrik untuk pegawai ini? Pegawai wajib login dengan NIP & kata sandi setelah ini.')) return;
+  call('cabutSemuaPerangkat', { pegawai_id: Number(id) })
+    .then(() => toast('Akses biometrik pegawai ini sudah dicabut.'))
+    .catch(e => toast(e.message, true));
 }
 function simpanPegawai() {
   const id = document.getElementById('fPegawaiId').value;
