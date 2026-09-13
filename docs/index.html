@@ -8,6 +8,12 @@
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
   body{ min-height:100vh; }
   .wrap{ max-width:1360px; margin:0 auto; padding:0 20px 60px; }
@@ -251,6 +257,7 @@
         <button class="header-tab active" data-tab="presensi" onclick="goTo('presensi')">Presensi</button>
         <button class="header-tab" data-tab="riwayat" onclick="goTo('riwayat')">Riwayat</button>
         <button class="header-tab" data-tab="izin" onclick="goTo('izin')">Izin</button>
+        <button class="header-tab" data-tab="chat" onclick="goTo('chat')">Chat</button>
         <button class="header-tab" data-tab="profil" onclick="goTo('profil')">Profil</button>
       </div>
 
@@ -457,6 +464,39 @@
       </div>
     </div>
 
+    <!-- ============ TAB: CHAT ============ -->
+    <div class="tab-content hidden" id="tab-chat">
+      <div class="chat-shell">
+        <div class="chat-sidebar" id="chatSidebar">
+          <div class="chat-sidebar-head">
+            <input id="chatSearchInput" placeholder="Cari kontak…" oninput="filterKontakChat(this.value)">
+            <button class="btn btn-primary" style="padding:8px 10px; font-size:12px;" onclick="bukaModalGrupBaru()">+ Grup</button>
+          </div>
+          <div class="section-label" style="margin:14px 0 6px;">Grup</div>
+          <div id="daftarGrup"><div class="empty">Memuat…</div></div>
+          <div class="section-label" style="margin:16px 0 6px;">Kontak</div>
+          <div id="daftarKontakChat"><div class="empty">Memuat…</div></div>
+        </div>
+        <div class="chat-main" id="chatMain">
+          <div class="chat-empty" id="chatEmptyState">Pilih kontak atau grup di sebelah kiri untuk mulai chat.</div>
+          <div class="chat-thread hidden" id="chatThread">
+            <div class="chat-thread-head">
+              <button class="chat-back" onclick="tutupThreadChatMobile()">←</button>
+              <div class="user-avatar" id="threadAvatar">-</div>
+              <div><div class="chat-thread-name" id="threadNama">-</div><div class="chat-thread-status" id="threadStatus">-</div></div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-row">
+              <button class="btn btn-ghost" style="padding:9px 11px;" onclick="pilihGambarChat()">📷</button>
+              <input type="file" id="inputGambarChat" accept="image/*" class="hidden" onchange="kirimGambarChat(event)">
+              <input id="chatTextInput" placeholder="Tulis pesan…" onkeydown="if(event.key==='Enter') kirimTeksChat()">
+              <button class="btn btn-primary" style="border-radius:20px;" onclick="kirimTeksChat()">Kirim</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ TAB: PROFIL ============ -->
     <div class="tab-content hidden" id="tab-profil">
       <div class="main-grid">
@@ -562,6 +602,23 @@
   <div id="overlayVerifikasiTeks">Memverifikasi…</div>
 </div>
 
+<!-- ============ MODAL GRUP BARU ============ -->
+<div class="modal-bg hidden" id="modalGrupBaru">
+  <div class="modal-sheet">
+    <div class="modal-title">Buat grup baru</div>
+    <div class="field-group"><label>Nama grup</label><input id="inNamaGrup" type="text" placeholder="Contoh: Tim Bidang Umum"></div>
+    <div class="field-group">
+      <label>Pilih anggota</label>
+      <div id="pilihAnggotaGrup" style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:9px; padding:4px 10px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" onclick="tutupModal('modalGrupBaru')">Batal</button>
+      <button class="submit" onclick="buatGrupBaru()">Buat grup</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
