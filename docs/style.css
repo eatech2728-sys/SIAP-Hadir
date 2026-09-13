@@ -1,54 +1,113 @@
 /* ===========================================================
-   Variabel desain — ubah nilai di sini untuk menyesuaikan
-   warna & identitas visual kantor Anda.
+   SIAP-Hadir — Tema Dashboard Gelap
+   Ubah nilai di :root untuk menyesuaikan warna & identitas visual.
    =========================================================== */
 :root{
-  --navy:#14283F;
-  --navy-2:#1F3E5E;
-  --gold:#AD8A3E;
-  --gold-light:#E4D2A5;
-  --bg:#EEF1F0;
-  --surface:#FFFFFF;
-  --text:#152130;
-  --text-sec:#5C6875;
-  --text-mute:#8A939C;
-  --border:#DEE3E6;
-  --success:#2E7A4F;
-  --success-bg:#E4F2E9;
-  --danger:#B23F3F;
-  --danger-bg:#FBEAEA;
-  --warn:#A9721F;
-  --warn-bg:#FBF0DE;
+  --bg:#0A1120;
+  --surface:#111A2E;
+  --surface-2:#16213A;
+  --surface-hover:#1C2944;
+  --border:#22304D;
+  --border-soft:#1A2540;
+  --text:#E9EEF7;
+  --text-sec:#96A6C4;
+  --text-mute:#5E7096;
+  --blue:#3B82F6;
+  --blue-dark:#2563EB;
+  --blue-bg:rgba(59,130,246,0.14);
+  --success:#22C55E;
+  --success-bg:rgba(34,197,94,0.14);
+  --warn:#F59E0B;
+  --warn-bg:rgba(245,158,11,0.14);
+  --danger:#EF4444;
+  --danger-bg:rgba(239,68,68,0.14);
+  --purple:#8B5CF6;
+  --purple-bg:rgba(139,92,246,0.14);
   --radius:14px;
+  --radius-sm:10px;
+
+  /* alias kompatibilitas mundur untuk admin.html/admin.js (tema lama) */
+  --navy:var(--blue-dark);
+  --navy-2:var(--surface-2);
+  --navy-3:var(--surface-hover);
+  --gold:var(--blue);
+  --gold-light:var(--blue-bg);
+}
+
+/* ===========================================================
+   Tema Terang — aktif saat html[data-theme="light"]
+   =========================================================== */
+:root[data-theme="light"]{
+  --bg:#F1F4F9;
+  --surface:#FFFFFF;
+  --surface-2:#F3F6FB;
+  --surface-hover:#E8EDF6;
+  --border:#DCE3EF;
+  --border-soft:#E7ECF5;
+  --text:#0F172A;
+  --text-sec:#51607A;
+  --text-mute:#8B98B3;
+  --blue:#2563EB;
+  --blue-dark:#1D4ED8;
+  --blue-bg:rgba(37,99,235,0.09);
+  --success:#15803D;
+  --success-bg:rgba(21,128,61,0.10);
+  --warn:#B45309;
+  --warn-bg:rgba(180,83,9,0.10);
+  --danger:#B91C1C;
+  --danger-bg:rgba(185,28,28,0.10);
+  --purple:#6D28D9;
+  --purple-bg:rgba(109,40,217,0.10);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 body{
   background:var(--bg);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  transition:background-color .2s ease, color .2s ease;
 }
+*, *::before, *::after{ transition:background-color .2s ease, border-color .2s ease, color .2s ease; }
 button{font-family:inherit; cursor:pointer;}
 input, select, textarea{font-family:inherit;}
 .hidden{display:none !important;}
+a{color:var(--blue);}
 
-.btn-primary{
-  width:100%; padding:14px; border-radius:10px; border:none;
-  background:var(--navy); color:#fff; font-size:14px; font-weight:700;
+.btn{
+  border:none; border-radius:var(--radius-sm); font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:11px 18px; font-size:13.5px; transition:opacity .15s;
 }
-.btn-gold{ background:var(--gold); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-size:13px; font-weight:700;}
-.btn-outline{ background:var(--surface); color:var(--danger); border:1px solid var(--border); }
-.badge{ font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:20px; }
-.badge.hadir{background:var(--success-bg); color:var(--success);}
-.badge.telat{background:var(--warn-bg); color:var(--warn);}
-.badge.alpha{background:var(--danger-bg); color:var(--danger);}
-.badge.izin, .badge.menunggu{background:#E7E9F5; color:#4B4FA0;}
-.badge.disetujui{background:var(--success-bg); color:var(--success);}
-.badge.ditolak{background:var(--danger-bg); color:var(--danger);}
+.btn:hover{opacity:0.88;}
+.btn:disabled{opacity:0.5; cursor:not-allowed;}
+.btn-primary{background:var(--blue); color:#fff;}
+.btn-outline{background:transparent; color:var(--text); border:1px solid var(--border);}
+.btn-ghost{background:var(--surface-2); color:var(--text-sec);}
+.btn-danger{background:var(--danger-bg); color:var(--danger);}
+.btn-success{background:var(--success-bg); color:var(--success);}
+.btn-block{width:100%;}
 
-.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.card{
+  background:var(--surface);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius);
+  padding:18px;
+}
+.badge{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+.badge.hadir, .badge.on-time, .badge.ok{ background:var(--success-bg); color:var(--success); }
+.badge.telat, .badge.warn{ background:var(--warn-bg); color:var(--warn); }
+.badge.alpha, .badge.error{ background:var(--danger-bg); color:var(--danger); }
+.badge.izin, .badge.dinas_luar, .badge.info{ background:var(--purple-bg); color:var(--purple); }
+.badge.menunggu{ background:var(--blue-bg); color:var(--blue); }
+
 .toast{
   position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-  background:var(--navy); color:#fff; padding:11px 18px; border-radius:10px;
-  font-size:13px; z-index:999; box-shadow:0 10px 26px rgba(20,40,63,0.3);
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+  padding:12px 18px; border-radius:var(--radius-sm); font-size:13px; z-index:999;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4); max-width:90vw;
 }
-.toast.error{background:var(--danger);}
+.toast.error{ border-color:var(--danger); color:var(--danger); }
+
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; }
+::-webkit-scrollbar-track{ background:transparent; }
