@@ -1,192 +1,291 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIAP-Hadir — Admin</title>
-<link rel="stylesheet" href="style.css">
-<style>
-  body{ min-height:100vh; }
-  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--navy); }
-  .login-card{ width:340px; background:var(--surface); border-radius:16px; padding:30px 26px; }
-  .login-badge{ width:52px; height:52px; border-radius:14px; background:var(--gold); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
-  .login-badge svg{ width:26px; height:26px; color:var(--navy); }
-  .login-title{ font-size:19px; font-weight:700; margin-bottom:2px; }
-  .login-sub{ font-size:12.5px; color:var(--text-sec); margin-bottom:22px; }
-  .field-group{ margin-bottom:13px; }
-  .field-group label{ font-size:12px; color:var(--text-sec); display:block; margin-bottom:5px; }
-  .field-group input, .field-group select, .field-group textarea{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); font-size:13.5px; }
-  .login-error{ background:var(--danger-bg); color:var(--danger); padding:9px 11px; border-radius:8px; font-size:12.5px; margin-bottom:12px; }
+// ============================================================
+// GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
+// (harus SAMA PERSIS dengan yang dipakai di app.js)
+// ============================================================
+const API_BASE = 'https://script.google.com/macros/s/AKfycbz7ojUCq_yPlSZhQcr-jP_f6_4VIeG4y2RxUSX1JbsR77C1ZnXLMnhCDO1Bh1Do0fg/exec';
 
-  #adminApp{ display:none; min-height:100vh; }
-  .topbar{ background:var(--navy); color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
-  .topbar .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
-  .topbar .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--gold); }
-  .topbar .userinfo{ font-size:12.5px; color:#C7D3DE; display:flex; align-items:center; gap:12px; }
-  .topbar button{ background:rgba(255,255,255,0.12); color:#fff; border:none; padding:7px 13px; border-radius:8px; font-size:12px; }
+// ---------- tema (terang/gelap/otomatis) ----------
+function terapkanTema(pref) {
+  let efektif = pref;
+  if (pref === 'auto') {
+    efektif = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', efektif);
+}
+function ubahTema(pref) {
+  localStorage.setItem('sh_theme', pref);
+  terapkanTema(pref);
+}
+function initTema() {
+  const pref = localStorage.getItem('sh_theme') || 'auto';
+  const sel = document.getElementById('selectTema');
+  if (sel) sel.value = pref;
+  terapkanTema(pref);
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if ((localStorage.getItem('sh_theme') || 'auto') === 'auto') terapkanTema('auto');
+    });
+  }
+}
+initTema();
 
-  .tabbar{ display:flex; gap:6px; padding:14px 24px 0; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; }
-  .tab-btn{ background:none; border:none; padding:10px 16px; font-size:13px; font-weight:600; color:var(--text-sec); border-bottom:2px solid transparent; white-space:nowrap; }
-  .tab-btn.active{ color:var(--navy); border-bottom-color:var(--navy); }
+let token = localStorage.getItem('sh_token') || null;
+let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
 
-  .wrap{ max-width:1000px; margin:0 auto; padding:22px 24px 60px; }
-  .panel{ display:none; }
-  .panel.active{ display:block; }
-  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; justify-content:space-between; }
-  .toolbar-left{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  input[type=date], input[type=month], select{ padding:9px 11px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
-  table{ width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-  thead th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-sec); background:var(--bg); padding:11px 14px; }
-  tbody td{ padding:11px 14px; font-size:13px; border-top:1px solid var(--border); }
-  tbody tr:hover{ background:#FAFBFB; }
-  .pill-btn{ padding:6px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; margin-right:6px; }
-  .pill-btn.approve{ background:var(--success-bg); color:var(--success); }
-  .pill-btn.reject{ background:var(--danger-bg); color:var(--danger); }
-  .pill-btn.edit{ background:var(--bg); color:var(--text-sec); }
-  .stat-cards{ display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
-  .stat-card{ flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
-  .stat-card .num{ font-size:22px; font-weight:700; color:var(--navy); }
-  .stat-card .lbl{ font-size:12px; color:var(--text-sec); margin-top:3px; }
+function call(action, payload = {}) {
+  if (!API_BASE || API_BASE.indexOf('PASTE_URL') === 0) {
+    return Promise.reject(new Error('API_BASE belum diisi. Buka admin.js dan ganti dengan URL Web App Apps Script Anda.'));
+  }
+  const body = Object.assign({ action, token }, payload);
+  return fetch(API_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    });
+}
+function toast(msg, isError) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+function tutupModal(id) { document.getElementById(id).classList.add('hidden'); }
+function fmtTgl(str) {
+  return new Date(str + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
-  .modal-bg{ position:fixed; inset:0; background:rgba(20,40,63,0.45); display:flex; align-items:center; justify-content:center; z-index:200; }
-  .modal-bg.hidden{ display:none; }
-  .modal-card{ width:420px; max-width:92vw; background:var(--surface); border-radius:16px; padding:22px; max-height:88vh; overflow-y:auto; }
-  .modal-title{ font-size:16px; font-weight:700; margin-bottom:16px; }
-  .field-row{ display:flex; gap:10px; }
-  .field-row .field-group{ flex:1; }
-  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
-  .modal-actions button{ flex:1; padding:11px; border-radius:9px; font-size:13.5px; font-weight:700; border:none; }
-  .modal-actions .cancel{ background:var(--bg); color:var(--text-sec); }
-  .modal-actions .submit{ background:var(--navy); color:#fff; }
-  .empty{ text-align:center; color:var(--text-mute); font-size:13px; padding:30px 0; }
-</style>
-</head>
-<body>
+// ---------- auth ----------
+function login() {
+  const nip = document.getElementById('inNip').value.trim();
+  const pass = document.getElementById('inPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
 
-<!-- LOGIN -->
-<div id="screen-login">
-  <div class="login-card">
-    <div class="login-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
-    <div class="login-title">SIAP-Hadir</div>
-    <div class="login-sub">Masuk sebagai admin kepegawaian</div>
-    <div id="loginError" class="login-error hidden"></div>
-    <div class="field-group"><label>NIP</label><input id="inNip" type="text" placeholder="NIP admin"></div>
-    <div class="field-group"><label>Kata sandi</label><input id="inPass" type="password" placeholder="••••••••"></div>
-    <button class="btn-primary" onclick="login()">Masuk</button>
-    <p style="text-align:center; font-size:11.5px; color:var(--text-mute); margin-top:14px;">
-      Bukan admin? <a href="index.html" style="color:var(--navy);">Buka aplikasi pegawai</a>
-    </p>
-  </div>
-</div>
+  call('login', { nip, password: pass })
+    .then(data => {
+      if (data.pegawai.role !== 'admin') {
+        errEl.textContent = 'Akun ini bukan admin. Gunakan aplikasi pegawai.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      token = data.token; user = data.pegawai;
+      localStorage.setItem('sh_token', token);
+      localStorage.setItem('sh_user', JSON.stringify(user));
+      masukKeAdmin();
+    })
+    .catch(e => { errEl.textContent = e.message; errEl.classList.remove('hidden'); });
+}
+function logout() {
+  localStorage.removeItem('sh_token'); localStorage.removeItem('sh_user');
+  token = null; user = null;
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('screen-login').style.display = 'flex';
+}
+function masukKeAdmin() {
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  document.getElementById('adminNama').textContent = user.nama;
+  document.getElementById('rekapTanggal').value = new Date().toISOString().slice(0, 10);
+  gantiTab('rekap');
+}
 
-<!-- ADMIN APP -->
-<div id="adminApp">
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span> SIAP-Hadir · Admin</div>
-    <div class="userinfo"><span id="adminNama">-</span><button onclick="logout()">Keluar</button></div>
-  </div>
-  <div class="tabbar">
-    <button class="tab-btn active" data-tab="rekap" onclick="gantiTab('rekap')">Rekap Kehadiran</button>
-    <button class="tab-btn" data-tab="pegawai" onclick="gantiTab('pegawai')">Pegawai</button>
-    <button class="tab-btn" data-tab="izin" onclick="gantiTab('izin')">Pengajuan Izin</button>
-    <button class="tab-btn" data-tab="lokasi" onclick="gantiTab('lokasi')">Lokasi Kantor</button>
-  </div>
+// ---------- tab ----------
+function gantiTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'rekap') muatRekap();
+  if (tab === 'pegawai') muatPegawai();
+  if (tab === 'izin') muatIzinAdmin();
+  if (tab === 'lokasi') muatLokasi();
+}
 
-  <div class="wrap">
+// ---------- rekap ----------
+function muatRekap() {
+  const tanggal = document.getElementById('rekapTanggal').value;
+  call('rekap', { tanggal }).then(rows => {
+    document.getElementById('rekapStat').innerHTML = `
+      <div class="stat-card"><div class="num">${rows.filter(r=>r.status_masuk==='hadir').length}</div><div class="lbl">Hadir tepat waktu</div></div>
+      <div class="stat-card"><div class="num">${rows.filter(r=>r.status_masuk==='telat').length}</div><div class="lbl">Terlambat</div></div>
+      <div class="stat-card"><div class="num">${rows.filter(r=>r.dalam_radius_masuk===0).length}</div><div class="lbl">Absen di luar radius</div></div>
+    `;
+    const body = document.getElementById('rekapBody');
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="8" class="empty">Belum ada absensi pada tanggal ini.</td></tr>'; return; }
+    body.innerHTML = rows.map(r => {
+      let wajahLabel = '<span style="color:var(--text-mute);">-</span>';
+      if (r.wajah_cocok_masuk === 1) wajahLabel = '<span class="badge hadir">Cocok</span>';
+      else if (r.wajah_cocok_masuk === 0) wajahLabel = '<span class="badge alpha">Tidak cocok</span>';
+      return `
+      <tr>
+        <td>${r.nama}</td><td>${r.nip}</td><td>${r.unit_kerja || '-'}</td>
+        <td>${r.jam_masuk || '-'}</td>
+        <td><span class="badge ${r.status_masuk || 'alpha'}">${r.status_masuk === 'telat' ? 'Telat' : r.status_masuk === 'hadir' ? 'Hadir' : r.status_masuk === 'dinas_luar' ? 'Dinas Luar' : '-'}</span></td>
+        <td>${r.jam_pulang || '-'}</td>
+        <td>${r.jarak_masuk != null && r.jarak_masuk !== '' ? Math.round(r.jarak_masuk) + ' m' : '-'} ${r.dalam_radius_masuk === 0 ? '⚠️' : ''}</td>
+        <td>${wajahLabel}</td>
+      </tr>`;
+    }).join('');
+  }).catch(e => toast(e.message, true));
+}
+function exportCsv() {
+  const bulan = document.getElementById('rekapTanggal').value.slice(0, 7);
+  call('exportRekap', { bulan }).then(r => {
+    const blob = new Blob(['\uFEFF' + r.csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = r.filename;
+    a.click();
+  }).catch(e => toast(e.message, true));
+}
 
-    <!-- REKAP -->
-    <div class="panel active" id="panel-rekap">
-      <div class="stat-cards" id="rekapStat"></div>
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <input type="date" id="rekapTanggal" onchange="muatRekap()">
-        </div>
-        <button class="btn-gold" onclick="exportCsv()">Unduh rekap bulan ini (CSV)</button>
-      </div>
-      <table>
-        <thead><tr><th>Nama</th><th>NIP</th><th>Unit</th><th>Masuk</th><th>Status</th><th>Pulang</th><th>Radius</th></tr></thead>
-        <tbody id="rekapBody"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
-      </table>
-    </div>
+// ---------- pegawai ----------
+function muatPegawai() {
+  call('listPegawai').then(rows => {
+    const body = document.getElementById('pegawaiBody');
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Belum ada data pegawai.</td></tr>'; return; }
+    body.innerHTML = rows.map(p => `
+      <tr>
+        <td>${p.nama}</td><td>${p.nip}</td><td>${p.jabatan || '-'}</td><td>${p.unit_kerja || '-'}</td>
+        <td>${p.jam_masuk}–${p.jam_pulang}</td>
+        <td><span class="badge ${p.status === 'aktif' ? 'hadir' : 'alpha'}">${p.status === 'aktif' ? 'Aktif' : 'Nonaktif'}</span></td>
+        <td><button class="pill-btn edit" onclick='editPegawai(${JSON.stringify(p)})'>Ubah</button></td>
+      </tr>`).join('');
+  }).catch(e => toast(e.message, true));
+}
+function bukaFormPegawai() {
+  document.getElementById('modalPegawaiTitle').textContent = 'Tambah pegawai';
+  document.getElementById('fPegawaiId').value = '';
+  document.getElementById('fNip').value = ''; document.getElementById('fNip').disabled = false;
+  document.getElementById('fNama').value = '';
+  document.getElementById('fJabatan').value = '';
+  document.getElementById('fUnit').value = '';
+  document.getElementById('fJamMasuk').value = '07:30';
+  document.getElementById('fJamPulang').value = '16:00';
+  document.getElementById('fToleransi').value = 15;
+  document.getElementById('fRole').value = 'pegawai';
+  document.getElementById('fPassword').value = '';
+  document.getElementById('fPassLabel').textContent = 'Kata sandi awal';
+  document.getElementById('fStatusWrap').style.display = 'none';
+  document.getElementById('fBiometrikWrap').style.display = 'none';
+  document.getElementById('modalPegawai').classList.remove('hidden');
+}
+function editPegawai(p) {
+  document.getElementById('modalPegawaiTitle').textContent = 'Ubah data pegawai';
+  document.getElementById('fPegawaiId').value = p.id;
+  document.getElementById('fNip').value = p.nip; document.getElementById('fNip').disabled = true;
+  document.getElementById('fNama').value = p.nama;
+  document.getElementById('fJabatan').value = p.jabatan || '';
+  document.getElementById('fUnit').value = p.unit_kerja || '';
+  document.getElementById('fJamMasuk').value = p.jam_masuk;
+  document.getElementById('fJamPulang').value = p.jam_pulang;
+  document.getElementById('fToleransi').value = p.toleransi_menit;
+  document.getElementById('fRole').value = p.role;
+  document.getElementById('fPassword').value = '';
+  document.getElementById('fPassLabel').textContent = 'Ganti kata sandi (kosongkan jika tidak diubah)';
+  document.getElementById('fStatusWrap').style.display = 'block';
+  document.getElementById('fStatus').value = p.status;
+  document.getElementById('fBiometrikWrap').style.display = 'block';
+  document.getElementById('modalPegawai').classList.remove('hidden');
+}
+function cabutSemuaPerangkatPegawai() {
+  const id = document.getElementById('fPegawaiId').value;
+  if (!id) return;
+  if (!confirm('Cabut semua akses login biometrik untuk pegawai ini? Pegawai wajib login dengan NIP & kata sandi setelah ini.')) return;
+  call('cabutSemuaPerangkat', { pegawai_id: Number(id) })
+    .then(() => toast('Akses biometrik pegawai ini sudah dicabut.'))
+    .catch(e => toast(e.message, true));
+}
+function simpanPegawai() {
+  const id = document.getElementById('fPegawaiId').value;
+  const payload = {
+    nip: document.getElementById('fNip').value.trim(),
+    nama: document.getElementById('fNama').value.trim(),
+    jabatan: document.getElementById('fJabatan').value.trim(),
+    unit_kerja: document.getElementById('fUnit').value.trim(),
+    jam_masuk: document.getElementById('fJamMasuk').value,
+    jam_pulang: document.getElementById('fJamPulang').value,
+    toleransi_menit: Number(document.getElementById('fToleransi').value),
+    role: document.getElementById('fRole').value,
+    password: document.getElementById('fPassword').value,
+  };
+  if (!payload.nama) { toast('Nama wajib diisi.', true); return; }
 
-    <!-- PEGAWAI -->
-    <div class="panel" id="panel-pegawai">
-      <div class="toolbar"><div></div><button class="btn-gold" onclick="bukaFormPegawai()">+ Tambah pegawai</button></div>
-      <table>
-        <thead><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Unit</th><th>Jadwal</th><th>Status</th><th></th></tr></thead>
-        <tbody id="pegawaiBody"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
-      </table>
-    </div>
+  const req = id
+    ? call('updatePegawai', Object.assign({ id }, payload, { status: document.getElementById('fStatus').value }))
+    : call('tambahPegawai', payload);
 
-    <!-- IZIN -->
-    <div class="panel" id="panel-izin">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select id="izinFilter" onchange="muatIzinAdmin()">
-            <option value="menunggu">Menunggu</option>
-            <option value="disetujui">Disetujui</option>
-            <option value="ditolak">Ditolak</option>
-            <option value="">Semua</option>
-          </select>
-        </div>
-      </div>
-      <table>
-        <thead><tr><th>Nama</th><th>Jenis</th><th>Tanggal</th><th>Keterangan</th><th>Status</th><th></th></tr></thead>
-        <tbody id="izinBody"><tr><td colspan="6" class="empty">Memuat…</td></tr></tbody>
-      </table>
-    </div>
+  req.then(() => { tutupModal('modalPegawai'); toast('Data pegawai tersimpan.'); muatPegawai(); })
+     .catch(e => toast(e.message, true));
+}
 
-    <!-- LOKASI -->
-    <div class="panel" id="panel-lokasi">
-      <div class="modal-card" style="width:100%; max-width:420px; margin:0;">
-        <div class="modal-title">Titik lokasi kantor</div>
-        <div class="field-group"><label>Nama lokasi</label><input id="fLokasiNama" type="text"></div>
-        <div class="field-row">
-          <div class="field-group"><label>Latitude</label><input id="fLokasiLat" type="text"></div>
-          <div class="field-group"><label>Longitude</label><input id="fLokasiLng" type="text"></div>
-        </div>
-        <div class="field-group"><label>Radius toleransi (meter)</label><input id="fLokasiRadius" type="number"></div>
-        <button class="pill-btn edit" style="margin-bottom:14px;" onclick="gunakanLokasiSaatIni()">📍 Gunakan lokasi perangkat ini</button>
-        <button class="btn-primary" onclick="simpanLokasi()">Simpan lokasi kantor</button>
-      </div>
-    </div>
+// ---------- izin ----------
+function muatIzinAdmin() {
+  const status = document.getElementById('izinFilter').value;
+  call('listIzin', { status }).then(rows => {
+    const body = document.getElementById('izinBody');
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Tidak ada pengajuan.</td></tr>'; return; }
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.nama}</td><td style="text-transform:capitalize;">${r.jenis.replace('_',' ')}</td>
+        <td>${fmtTgl(r.tanggal_mulai)} – ${fmtTgl(r.tanggal_selesai)}</td>
+        <td>${r.alasan || '-'}</td>
+        <td><span class="badge ${r.status}">${r.status}</span></td>
+        <td>
+          ${r.status === 'menunggu' ? `
+            <button class="pill-btn approve" onclick="setIzinStatus(${r.id}, 'disetujui')">Setujui</button>
+            <button class="pill-btn reject" onclick="setIzinStatus(${r.id}, 'ditolak')">Tolak</button>
+          ` : '-'}
+        </td>
+      </tr>`).join('');
+  }).catch(e => toast(e.message, true));
+}
+function setIzinStatus(id, status) {
+  call('setIzinStatus', { id, status })
+    .then(() => { toast('Status izin diperbarui.'); muatIzinAdmin(); })
+    .catch(e => toast(e.message, true));
+}
 
-  </div>
-</div>
+// ---------- lokasi ----------
+function muatLokasi() {
+  call('getLokasi').then(l => {
+    if (!l) return;
+    document.getElementById('fLokasiNama').value = l.nama;
+    document.getElementById('fLokasiLat').value = l.latitude;
+    document.getElementById('fLokasiLng').value = l.longitude;
+    document.getElementById('fLokasiRadius').value = l.radius_meter;
+  }).catch(e => toast(e.message, true));
+}
+function gunakanLokasiSaatIni() {
+  if (!navigator.geolocation) { toast('Perangkat tidak mendukung GPS.', true); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('fLokasiLat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('fLokasiLng').value = pos.coords.longitude.toFixed(6);
+      toast('Lokasi perangkat diterapkan. Jangan lupa simpan.');
+    },
+    () => toast('Gagal mengambil lokasi perangkat.', true)
+  );
+}
+function simpanLokasi() {
+  const payload = {
+    nama: document.getElementById('fLokasiNama').value.trim() || 'Kantor',
+    latitude: parseFloat(document.getElementById('fLokasiLat').value),
+    longitude: parseFloat(document.getElementById('fLokasiLng').value),
+    radius_meter: Number(document.getElementById('fLokasiRadius').value) || 150,
+  };
+  if (isNaN(payload.latitude) || isNaN(payload.longitude)) { toast('Latitude/longitude tidak valid.', true); return; }
+  call('setLokasi', payload)
+    .then(() => toast('Lokasi kantor tersimpan.'))
+    .catch(e => toast(e.message, true));
+}
 
-<!-- Modal tambah/edit pegawai -->
-<div class="modal-bg hidden" id="modalPegawai">
-  <div class="modal-card">
-    <div class="modal-title" id="modalPegawaiTitle">Tambah pegawai</div>
-    <input type="hidden" id="fPegawaiId">
-    <div class="field-row">
-      <div class="field-group"><label>NIP</label><input id="fNip" type="text"></div>
-      <div class="field-group"><label>Nama</label><input id="fNama" type="text"></div>
-    </div>
-    <div class="field-row">
-      <div class="field-group"><label>Jabatan</label><input id="fJabatan" type="text"></div>
-      <div class="field-group"><label>Unit kerja</label><input id="fUnit" type="text"></div>
-    </div>
-    <div class="field-row">
-      <div class="field-group"><label>Jam masuk</label><input id="fJamMasuk" type="time" value="07:30"></div>
-      <div class="field-group"><label>Jam pulang</label><input id="fJamPulang" type="time" value="16:00"></div>
-    </div>
-    <div class="field-row">
-      <div class="field-group"><label>Toleransi telat (menit)</label><input id="fToleransi" type="number" value="15"></div>
-      <div class="field-group"><label>Peran</label><select id="fRole"><option value="pegawai">Pegawai</option><option value="admin">Admin</option></select></div>
-    </div>
-    <div class="field-group"><label id="fPassLabel">Kata sandi awal</label><input id="fPassword" type="text" placeholder="Minimal 6 karakter"></div>
-    <div class="field-group" id="fStatusWrap" style="display:none;">
-      <label>Status</label>
-      <select id="fStatus"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select>
-    </div>
-    <div class="modal-actions">
-      <button class="cancel" onclick="tutupModal('modalPegawai')">Batal</button>
-      <button class="submit" onclick="simpanPegawai()">Simpan</button>
-    </div>
-  </div>
-</div>
-
-<script src="admin.js"></script>
-</body>
-</html>
+// ---------- init ----------
+if (token && user && user.role === 'admin') {
+  masukKeAdmin();
+}
