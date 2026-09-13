@@ -2,622 +2,202 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SIAP-Hadir — Presensi Pegawai</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIAP-Hadir — Admin</title>
 <link rel="stylesheet" href="style.css">
-<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
 <style>
   body{ min-height:100vh; }
-  .wrap{ max-width:1360px; margin:0 auto; padding:0 20px 60px; }
-
-  /* ---------- LOGIN ---------- */
-  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 20%, var(--surface-2) 0%, var(--bg) 60%); padding:20px; }
-  .login-card{ width:380px; max-width:100%; background:var(--surface); border:1px solid var(--border-soft); border-radius:18px; padding:32px 28px; }
-  .login-badge{ width:56px; height:56px; border-radius:14px; background:var(--blue); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
-  .login-badge svg{ width:28px; height:28px; color:#fff; }
-  .login-title{ font-size:21px; font-weight:700; }
-  .login-sub{ font-size:12.5px; color:var(--text-sec); margin:4px 0 24px; }
-  .field{ margin-bottom:14px; }
-  .field label{ font-size:12px; color:var(--text-sec); display:block; margin-bottom:6px; }
-  .field input{ width:100%; padding:12px 13px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; outline:none; }
-  .field input:focus{ border-color:var(--blue); }
-  .login-error{ background:var(--danger-bg); border:1px solid var(--danger); color:var(--danger); padding:10px 12px; border-radius:8px; font-size:12.5px; margin-bottom:14px; }
-  .divider-or{ display:flex; align-items:center; gap:10px; color:var(--text-mute); font-size:11.5px; margin:16px 0; }
-  .divider-or::before, .divider-or::after{ content:''; flex:1; height:1px; background:var(--border); }
-  .login-foot{ text-align:center; font-size:11px; color:var(--text-mute); margin-top:18px; line-height:1.6; }
-
-  /* ---------- HEADER ---------- */
-  #appHeader{ position:sticky; top:0; z-index:50; background:rgba(10,17,32,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--border-soft); }
-  .header-row{ max-width:1360px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-  .brand{ display:flex; align-items:center; gap:10px; margin-right:6px; }
-  .brand-icon{ width:38px; height:38px; border-radius:10px; background:var(--blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .brand-icon svg{ width:20px; height:20px; color:#fff; }
-  .brand-name{ font-size:14.5px; font-weight:700; line-height:1.2; }
-  .brand-sub{ font-size:11px; color:var(--text-mute); }
-  .pill{ display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:11.5px; font-weight:600; background:var(--surface-2); border:1px solid var(--border); white-space:nowrap; }
-  .pill-dot{ width:7px; height:7px; border-radius:50%; background:var(--text-mute); flex-shrink:0; }
-  .pill.ok .pill-dot{ background:var(--success); box-shadow:0 0 6px var(--success); }
-  .pill.ok{ color:var(--success); }
-  .pill.warn .pill-dot{ background:var(--warn); }
-  .pill.warn{ color:var(--warn); }
-  .header-tabs{ display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:12px; margin-left:auto; }
-  #selectTema{ appearance:none; -webkit-appearance:none; background-image:none; color:var(--text-sec); font-family:inherit; }
-  #selectTema:focus{ outline:none; border-color:var(--blue); }
-  .header-tab{ background:none; border:none; padding:8px 16px; border-radius:9px; font-size:12.5px; font-weight:600; color:var(--text-sec); }
-  .header-tab.active{ background:var(--blue); color:#fff; }
-  .user-card{ display:flex; align-items:center; gap:10px; padding:6px 12px 6px 6px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); }
-  .user-avatar{ width:34px; height:34px; border-radius:9px; background:var(--blue-bg); color:var(--blue); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
-  .user-name{ font-size:12.5px; font-weight:700; line-height:1.2; }
-  .user-role{ font-size:10.5px; color:var(--text-mute); }
-
-  /* ---------- BANNERS ---------- */
-  .banner-row{ display:grid; grid-template-columns:1fr; gap:14px; margin:18px 0; }
-  @media (min-width:920px){ .banner-row{ grid-template-columns:1fr 1fr; } }
-  .banner{ display:flex; align-items:flex-start; gap:12px; }
-  .banner-icon{ width:36px; height:36px; border-radius:10px; background:var(--blue-bg); color:var(--blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .banner-title{ font-size:13.5px; font-weight:700; margin-bottom:3px; }
-  .banner-text{ font-size:12px; color:var(--text-sec); line-height:1.6; }
-  .banner-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .banner-actions .btn{ padding:8px 13px; font-size:12px; }
-
-  /* ---------- MAIN GRID ---------- */
-  .main-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
-  @media (min-width:980px){ .main-grid{ grid-template-columns:1fr 1fr; align-items:start; } }
-  .col{ display:flex; flex-direction:column; gap:16px; }
-
-  .clock-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
-  .clock-time{ font-size:30px; font-weight:700; letter-spacing:0.5px; font-variant-numeric:tabular-nums; }
-  .clock-date{ font-size:12px; color:var(--text-sec); margin-top:2px; }
-  .shift-info{ text-align:right; }
-  .shift-badge{ font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-bg); padding:4px 10px; border-radius:20px; }
-  .shift-jam{ font-size:12px; color:var(--text-sec); margin-top:4px; }
-
-  .jenis-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  .jenis-btn{ background:var(--surface-2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 10px; text-align:left; position:relative; }
-  .jenis-btn.active{ border-color:var(--blue); background:var(--blue-bg); }
-  .jenis-btn .ic{ width:20px; height:20px; color:var(--text-sec); margin-bottom:8px; }
-  .jenis-btn.active .ic{ color:var(--blue); }
-  .jenis-btn .t1{ font-size:13px; font-weight:700; }
-  .jenis-btn .t2{ font-size:10.5px; color:var(--text-mute); margin-top:1px; }
-  .jenis-dot{ position:absolute; top:10px; right:10px; width:8px; height:8px; border-radius:50%; background:var(--border); }
-  .jenis-btn.active .jenis-dot{ background:var(--blue); }
-
-  .section-label{ font-size:12px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-
-  .cam-card{ position:relative; background:#050810; border-radius:var(--radius); overflow:hidden; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; border:1px solid var(--border-soft); }
-  .cam-card video, .cam-card canvas{ width:100%; height:100%; object-fit:cover; }
-  .cam-hint{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); color:#fff; font-size:11px; background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:20px; }
-  .cam-lock{ position:absolute; inset:0; background:rgba(5,8,16,0.92); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:12px; }
-  .cam-lock-icon{ width:48px; height:48px; border-radius:50%; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--text-sec); }
-  .cam-lock-icon svg{ width:22px; height:22px; }
-  .cam-lock-title{ font-size:14px; font-weight:700; }
-  .cam-lock-text{ font-size:11.5px; color:var(--text-sec); max-width:280px; line-height:1.5; }
-  .cam-lock-foot{ font-size:10.5px; color:var(--text-mute); display:flex; align-items:center; gap:5px; margin-top:6px; }
-
-  textarea.catatan{ width:100%; padding:12px 13px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; resize:vertical; min-height:64px; outline:none; }
-  textarea.catatan:focus{ border-color:var(--blue); }
-
-  .checklist{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .check-item{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); font-size:11.5px; }
-  .check-dot{ width:16px; height:16px; border-radius:50%; border:2px solid var(--text-mute); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .check-item.ok .check-dot{ border-color:var(--success); background:var(--success); }
-  .check-item.ok .check-dot svg{ width:9px; height:9px; color:#04140a; }
-  .check-item.warn .check-dot{ border-color:var(--warn); background:var(--warn); }
-  .check-item span{ color:var(--text-sec); }
-  .check-item.ok span, .check-item.warn span{ color:var(--text); }
-
-  .warn-box{ background:var(--danger-bg); border:1px solid rgba(239,68,68,0.35); border-radius:var(--radius-sm); padding:13px 14px; font-size:12px; color:var(--text); line-height:1.6; }
-  .warn-box b{ color:var(--danger); }
-  .warn-actions{ display:flex; gap:8px; margin-top:10px; }
-
-  /* radius visual */
-  .radius-widget{ display:flex; flex-direction:column; align-items:center; padding:10px 0 4px; }
-  .radius-ring-wrap{ position:relative; width:210px; height:210px; }
-  .ring{ position:absolute; border-radius:50%; border:1.5px dashed var(--border); }
-  .ring.r1{ inset:0; }
-  .ring.r2{ inset:28px; border-style:solid; border-color:var(--blue-bg); background:var(--blue-bg); }
-  .ring-center{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; border-radius:10px; background:var(--blue); display:flex; align-items:center; justify-content:center; z-index:3; }
-  .ring-center svg{ width:18px; height:18px; color:#fff; }
-  .ring-dot{ position:absolute; width:26px; height:26px; border-radius:50%; background:var(--danger); border:3px solid #fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#fff; z-index:4; transition:all .4s ease; }
-  .ring-dot.ok{ background:var(--success); }
-  .radius-caption{ font-size:11.5px; color:var(--text-mute); margin-top:10px; }
-
-  .stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  @media (min-width:1240px){ .stat-grid{ grid-template-columns:repeat(3,1fr); } }
-  .stat-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px; }
-  .stat-card .num{ font-size:19px; font-weight:800; }
-  .stat-card .lbl{ font-size:10.5px; color:var(--text-mute); margin-top:3px; line-height:1.4; }
-
-  .donut-wrap{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; justify-content:center; }
-  .legend-list{ display:flex; flex-direction:column; gap:8px; font-size:12px; flex:1; min-width:140px; }
-  .legend-item{ display:flex; align-items:center; gap:8px; justify-content:space-between; }
-  .legend-item .l{ display:flex; align-items:center; gap:7px; color:var(--text-sec); }
-  .legend-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-
-  .breakdown-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .breakdown-item{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; }
-  .breakdown-item .top{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-  .breakdown-item .ic{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .breakdown-item .val{ font-size:15px; font-weight:800; }
-  .breakdown-item .sub{ font-size:10.5px; color:var(--text-mute); }
-
-  .info-row{ display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
-  .info-row:last-child{ border-bottom:none; }
-  .info-row .k{ color:var(--text-mute); }
-  .info-row .v{ font-weight:600; }
-
-  /* Riwayat / Izin */
-  .filter-row{ display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; }
-  .filter-chip{ padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--surface-2); color:var(--text-sec); white-space:nowrap; flex-shrink:0; }
-  .filter-chip.active{ background:var(--blue); color:#fff; border-color:var(--blue); }
-  .list-item{ display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--border-soft); }
-  .list-item:last-child{ border-bottom:none; }
-  .list-item .day{ font-size:13px; font-weight:600; }
-  .list-item .time{ font-size:11.5px; color:var(--text-mute); margin-top:2px; }
-  .empty{ text-align:center; color:var(--text-mute); font-size:12.5px; padding:26px 0; }
-
-  .izin-item{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:10px; }
-  .izin-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
-  .izin-jenis{ font-size:13px; font-weight:700; text-transform:capitalize; }
-  .izin-tgl{ font-size:11px; color:var(--text-mute); margin-top:2px; }
-  .izin-alasan{ font-size:12px; color:var(--text-sec); line-height:1.5; }
-
-  /* Profil */
-  .profil-head{ display:flex; flex-direction:column; align-items:center; padding:8px 0 20px; }
-  .avatar-lg{ width:72px; height:72px; border-radius:50%; background:var(--blue-bg); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; margin-bottom:12px; }
-  .profil-name{ font-size:16px; font-weight:700; }
-  .profil-jab{ font-size:12px; color:var(--text-sec); margin-top:2px; }
-  .face-status{ display:flex; align-items:center; gap:10px; padding:12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); margin-bottom:12px; font-size:12.5px; }
-  .face-status .ic{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--border); color:var(--text-sec); }
-  .face-status.ok .ic{ background:var(--success-bg); color:var(--success); }
-  .face-wrap{ background:#050810; border-radius:var(--radius); overflow:hidden; position:relative; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
-  .face-wrap video, .face-wrap canvas{ width:100%; height:100%; object-fit:cover; }
-  .face-msg{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); color:#fff; font-size:11.5px; background:rgba(0,0,0,0.5); padding:6px 14px; border-radius:20px; text-align:center; }
-  .device-item{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
-  .device-item:last-child{ border-bottom:none; }
-  .device-item .lbl{ font-weight:600; }
-  .device-item .sub{ color:var(--text-mute); font-size:11px; margin-top:1px; }
-
-  /* Modal */
-  .modal-bg{ position:fixed; inset:0; background:rgba(3,6,14,0.75); display:flex; align-items:center; justify-content:center; z-index:200; padding:16px; }
-  .modal-bg.hidden{ display:none; }
-  .modal-sheet{ width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px 20px; max-height:88vh; overflow-y:auto; }
-  .modal-title{ font-size:15.5px; font-weight:700; margin-bottom:14px; }
-  .field-group{ margin-bottom:12px; }
+  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--navy); }
+  .login-card{ width:340px; background:var(--surface); border-radius:16px; padding:30px 26px; }
+  .login-badge{ width:52px; height:52px; border-radius:14px; background:var(--gold); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .login-badge svg{ width:26px; height:26px; color:var(--navy); }
+  .login-title{ font-size:19px; font-weight:700; margin-bottom:2px; }
+  .login-sub{ font-size:12.5px; color:var(--text-sec); margin-bottom:22px; }
+  .field-group{ margin-bottom:13px; }
   .field-group label{ font-size:12px; color:var(--text-sec); display:block; margin-bottom:5px; }
-  .field-group input, .field-group select, .field-group textarea{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); font-size:13.5px; background:var(--surface-2); color:var(--text); }
+  .field-group input, .field-group select, .field-group textarea{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); font-size:13.5px; }
+  .login-error{ background:var(--danger-bg); color:var(--danger); padding:9px 11px; border-radius:8px; font-size:12.5px; margin-bottom:12px; }
+
+  #adminApp{ display:none; min-height:100vh; }
+  .topbar{ background:var(--navy); color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
+  .topbar .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--gold); }
+  .topbar .userinfo{ font-size:12.5px; color:#C7D3DE; display:flex; align-items:center; gap:12px; }
+  .topbar button{ background:rgba(255,255,255,0.12); color:#fff; border:none; padding:7px 13px; border-radius:8px; font-size:12px; }
+
+  .tabbar{ display:flex; gap:6px; padding:14px 24px 0; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab-btn{ background:none; border:none; padding:10px 16px; font-size:13px; font-weight:600; color:var(--text-sec); border-bottom:2px solid transparent; white-space:nowrap; }
+  .tab-btn.active{ color:var(--navy); border-bottom-color:var(--navy); }
+
+  .wrap{ max-width:1000px; margin:0 auto; padding:22px 24px 60px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; justify-content:space-between; }
+  .toolbar-left{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  input[type=date], input[type=month], select{ padding:9px 11px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
+  table{ width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  thead th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-sec); background:var(--bg); padding:11px 14px; }
+  tbody td{ padding:11px 14px; font-size:13px; border-top:1px solid var(--border); }
+  tbody tr:hover{ background:#FAFBFB; }
+  .pill-btn{ padding:6px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; margin-right:6px; }
+  .pill-btn.approve{ background:var(--success-bg); color:var(--success); }
+  .pill-btn.reject{ background:var(--danger-bg); color:var(--danger); }
+  .pill-btn.edit{ background:var(--bg); color:var(--text-sec); }
+  .stat-cards{ display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+  .stat-card{ flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .stat-card .num{ font-size:22px; font-weight:700; color:var(--navy); }
+  .stat-card .lbl{ font-size:12px; color:var(--text-sec); margin-top:3px; }
+
+  .modal-bg{ position:fixed; inset:0; background:rgba(20,40,63,0.45); display:flex; align-items:center; justify-content:center; z-index:200; }
+  .modal-bg.hidden{ display:none; }
+  .modal-card{ width:420px; max-width:92vw; background:var(--surface); border-radius:16px; padding:22px; max-height:88vh; overflow-y:auto; }
+  .modal-title{ font-size:16px; font-weight:700; margin-bottom:16px; }
   .field-row{ display:flex; gap:10px; }
   .field-row .field-group{ flex:1; }
   .modal-actions{ display:flex; gap:10px; margin-top:16px; }
-  .modal-actions button{ flex:1; padding:12px; border-radius:10px; font-size:13.5px; font-weight:700; border:none; }
-  .modal-actions .cancel{ background:var(--surface-2); color:var(--text-sec); }
-  .modal-actions .submit{ background:var(--blue); color:#fff; }
-
-  .verif-overlay{ position:fixed; inset:0; background:rgba(3,6,14,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; z-index:300; gap:14px; }
-  .spinner{ width:34px; height:34px; border:3px solid rgba(255,255,255,0.2); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  .success-wrap{ text-align:center; padding:40px 10px; }
-  .success-icon{ width:56px; height:56px; border-radius:50%; background:var(--success-bg); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
-  .success-icon svg{ width:26px; height:26px; color:var(--success); }
+  .modal-actions button{ flex:1; padding:11px; border-radius:9px; font-size:13.5px; font-weight:700; border:none; }
+  .modal-actions .cancel{ background:var(--bg); color:var(--text-sec); }
+  .modal-actions .submit{ background:var(--navy); color:#fff; }
+  .empty{ text-align:center; color:var(--text-mute); font-size:13px; padding:30px 0; }
 </style>
 </head>
 <body>
 
-<!-- ================= LOGIN ================= -->
-<div class="screen" id="screen-login">
+<!-- LOGIN -->
+<div id="screen-login">
   <div class="login-card">
-    <div class="login-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-    </div>
+    <div class="login-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
     <div class="login-title">SIAP-Hadir</div>
-    <div class="login-sub">Presensi pegawai berbasis lokasi & biometrik</div>
+    <div class="login-sub">Masuk sebagai admin kepegawaian</div>
     <div id="loginError" class="login-error hidden"></div>
-
-    <button id="btnLoginBiometrik" class="btn btn-outline btn-block hidden" style="margin-bottom:6px;" onclick="loginBiometrik()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 00-5 5v2a5 5 0 0010 0V7a5 5 0 00-5-5z"/><path d="M6 12v1a6 6 0 0012 0v-1M4 12v1a8 8 0 0016 0v-1M12 16v4"/></svg>
-      <span id="btnLoginBiometrikLabel">Masuk dengan Sidik Jari / Face ID</span>
-    </button>
-    <div id="dividerOr" class="divider-or hidden">atau masuk dengan kata sandi</div>
-
-    <div class="field"><label>NIP</label><input id="inNip" type="text" placeholder="Masukkan NIP Anda"></div>
-    <div class="field"><label>Kata sandi</label><input id="inPass" type="password" placeholder="••••••••"></div>
-    <button class="btn btn-primary btn-block" onclick="login()">Masuk</button>
-    <div class="login-foot">Lupa kata sandi? Hubungi admin kepegawaian.</div>
+    <div class="field-group"><label>NIP</label><input id="inNip" type="text" placeholder="NIP admin"></div>
+    <div class="field-group"><label>Kata sandi</label><input id="inPass" type="password" placeholder="••••••••"></div>
+    <button class="btn-primary" onclick="login()">Masuk</button>
+    <p style="text-align:center; font-size:11.5px; color:var(--text-mute); margin-top:14px;">
+      Bukan admin? <a href="index.html" style="color:var(--navy);">Buka aplikasi pegawai</a>
+    </p>
   </div>
 </div>
 
-<!-- ================= MAIN APP ================= -->
-<div id="mainApp" class="hidden">
-
-  <div id="appHeader">
-    <div class="header-row">
-      <div class="brand">
-        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
-        <div><div class="brand-name">SIAP-Hadir</div><div class="brand-sub">Presensi Lokasi &amp; Biometrik</div></div>
-      </div>
-      <span class="pill ok" id="pillServer"><span class="pill-dot"></span><span id="pillServerText">Server: —</span></span>
-      <span class="pill" id="pillRadius"><span class="pill-dot"></span><span id="pillRadiusText">Lokasi belum dicek</span></span>
-
-      <select id="selectTema" class="pill" onchange="ubahTema(this.value)" style="padding:6px 10px 6px 8px; cursor:pointer;">
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> SIAP-Hadir · Admin</div>
+    <div class="userinfo">
+      <select id="selectTema" onchange="ubahTema(this.value)" style="background:rgba(255,255,255,0.12); color:#fff; border:none; padding:7px 10px; border-radius:8px; font-size:12px;">
         <option value="auto">🖥️ Otomatis</option>
         <option value="light">☀️ Terang</option>
         <option value="dark">🌙 Gelap</option>
       </select>
-
-      <div class="header-tabs">
-        <button class="header-tab active" data-tab="presensi" onclick="goTo('presensi')">Presensi</button>
-        <button class="header-tab" data-tab="riwayat" onclick="goTo('riwayat')">Riwayat</button>
-        <button class="header-tab" data-tab="izin" onclick="goTo('izin')">Izin</button>
-        <button class="header-tab" data-tab="chat" onclick="goTo('chat')">Chat</button>
-        <button class="header-tab" data-tab="profil" onclick="goTo('profil')">Profil</button>
-      </div>
-
-      <div class="user-card">
-        <div class="user-avatar" id="headerAvatar">-</div>
-        <div><div class="user-name" id="headerNama">-</div><div class="user-role" id="headerJabatan">-</div></div>
-      </div>
+      <span id="adminNama">-</span><button onclick="logout()">Keluar</button>
     </div>
+  </div>
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="rekap" onclick="gantiTab('rekap')">Rekap Kehadiran</button>
+    <button class="tab-btn" data-tab="pegawai" onclick="gantiTab('pegawai')">Pegawai</button>
+    <button class="tab-btn" data-tab="izin" onclick="gantiTab('izin')">Pengajuan Izin</button>
+    <button class="tab-btn" data-tab="lokasi" onclick="gantiTab('lokasi')">Lokasi Kantor</button>
   </div>
 
   <div class="wrap">
 
-    <div class="banner-row">
-      <div class="card banner">
-        <div class="banner-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg></div>
-        <div style="flex:1;">
-          <div class="banner-title">Pengingat shift otomatis</div>
-          <div class="banner-text" id="bannerShiftText">Memuat jadwal shift…</div>
-          <div class="banner-actions">
-            <button class="btn btn-ghost" id="btnIzinkanNotif" onclick="aktifkanNotifikasiPengingat()">🔔 Izinkan Notifikasi</button>
-            <button class="btn btn-ghost" onclick="ujiNotifikasi()">Uji notifikasi</button>
-          </div>
+    <!-- REKAP -->
+    <div class="panel active" id="panel-rekap">
+      <div class="stat-cards" id="rekapStat"></div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input type="date" id="rekapTanggal" onchange="muatRekap()">
         </div>
+        <button class="btn-gold" onclick="exportCsv()">Unduh rekap bulan ini (CSV)</button>
       </div>
-      <div class="card banner">
-        <div class="banner-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-        <div style="flex:1;">
-          <div class="banner-title">Presensi cerdas berbasis lokasi &amp; kamera</div>
-          <div class="banner-text">Pastikan posisi Anda berada di dalam radius kantor. Foto selfie otomatis dicocokkan dengan wajah terdaftar sebelum presensi tersimpan.</div>
-        </div>
-      </div>
+      <table>
+        <thead><tr><th>Nama</th><th>NIP</th><th>Unit</th><th>Masuk</th><th>Status</th><th>Pulang</th><th>Radius</th><th>Wajah</th></tr></thead>
+        <tbody id="rekapBody"><tr><td colspan="8" class="empty">Memuat…</td></tr></tbody>
+      </table>
     </div>
 
-    <!-- ============ TAB: PRESENSI ============ -->
-    <div class="tab-content" id="tab-presensi">
-      <div class="main-grid">
-
-        <!-- KOLOM KIRI -->
-        <div class="col">
-          <div class="card">
-            <div class="clock-row">
-              <div>
-                <div class="clock-time" id="jamBerjalan">--:--:--</div>
-                <div class="clock-date" id="tanggalHariIni">-</div>
-              </div>
-              <div class="shift-info">
-                <span class="shift-badge" id="statusHariIni">Memuat…</span>
-                <div class="shift-jam" id="shiftJamText">-</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-label">Pilih jenis presensi</div>
-            <div class="jenis-row" id="jenisRow">
-              <button class="jenis-btn active" data-jenis="masuk" onclick="pilihJenisPresensi('masuk')">
-                <span class="jenis-dot"></span>
-                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/></svg>
-                <div class="t1">Absen Masuk</div><div class="t2">Mulai jam kerja</div>
-              </button>
-              <button class="jenis-btn" data-jenis="pulang" onclick="pilihJenisPresensi('pulang')">
-                <span class="jenis-dot"></span>
-                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4"/><path d="M14 17l5-5-5-5M19 12H7"/></svg>
-                <div class="t1">Absen Pulang</div><div class="t2">Selesai jam kerja</div>
-              </button>
-              <button class="jenis-btn" data-jenis="dinas_luar" onclick="pilihJenisPresensi('dinas_luar')">
-                <span class="jenis-dot"></span>
-                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                <div class="t1">Dinas Luar</div><div class="t2">Tugas luar kantor</div>
-              </button>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-label">Jendela kamera &amp; selfie</div>
-            <div class="cam-card">
-              <video id="videoEl" autoplay playsinline muted></video>
-              <canvas id="canvasEl" class="hidden"></canvas>
-              <div class="cam-hint" id="camHint">Posisikan wajah di tengah bingkai</div>
-              <div class="cam-lock hidden" id="camLock">
-                <div class="cam-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-                <div class="cam-lock-title">Akses Jendela Kamera Terkunci Biometrik</div>
-                <div class="cam-lock-text">Verifikasi identitas Anda menggunakan sensor biometrik perangkat untuk membuka jendela pratinjau kamera.</div>
-                <button class="btn btn-primary" onclick="verifikasiBiometrikLokal()">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 00-5 5v2a5 5 0 0010 0V7a5 5 0 00-5-5z"/><path d="M6 12v1a6 6 0 0012 0v-1M4 12v1a8 8 0 0016 0v-1M12 16v4"/></svg>
-                  Verifikasi Biometrik
-                </button>
-                <div class="cam-lock-foot">🛡️ Standar Web Authentication (FIDO2)</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-label">Catatan / rencana kerja (opsional)</div>
-            <textarea class="catatan" id="inCatatan" placeholder="Contoh: masuk kerja tepat waktu, siap mengikuti daily standup…"></textarea>
-          </div>
-
-          <div class="card">
-            <div class="section-label">Validasi kehadiran real-time</div>
-            <div class="checklist">
-              <div class="check-item" id="chkBiometrik"><span class="check-dot"></span><span>Biometrik valid</span></div>
-              <div class="check-item" id="chkFoto"><span class="check-dot"></span><span>Foto selfie diambil</span></div>
-              <div class="check-item" id="chkGps"><span class="check-dot"></span><span id="chkGpsLabel">GPS terdeteksi</span></div>
-              <div class="check-item" id="chkRadius"><span class="check-dot"></span><span id="chkRadiusLabel">Cek radius kantor</span></div>
-            </div>
-          </div>
-
-          <div class="warn-box hidden" id="warnLuarRadius">
-            <b>Posisi di luar radius kantor.</b> Jika Anda mengirim presensi dalam status ini, sistem akan meminta konfirmasi kehadiran luar radius, atau Anda bisa beralih ke jenis <b>Dinas Luar</b>.
-            <div class="warn-actions">
-              <button class="btn btn-ghost" style="flex:1;" onclick="pilihJenisPresensi('dinas_luar')">Beralih ke Dinas Luar</button>
-            </div>
-          </div>
-
-          <button class="btn btn-primary btn-block" id="btnKirimPresensi" style="padding:15px;" onclick="mulaiAlurPresensi()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            <span id="btnKirimPresensiLabel">Kirim Presensi Masuk Sekarang</span>
-          </button>
-        </div>
-
-        <!-- KOLOM KANAN -->
-        <div class="col">
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <div class="section-label" style="margin-bottom:0;">Lokasi target kantor</div>
-              <button class="btn btn-ghost" style="padding:6px 10px; font-size:11px;" onclick="mulaiCekLokasi()">↻ Update GPS</button>
-            </div>
-            <div style="font-size:13px; font-weight:700; margin-bottom:10px;" id="namaKantorText">Memuat lokasi kantor…</div>
-
-            <div class="radius-widget">
-              <div class="radius-ring-wrap">
-                <div class="ring r1"></div>
-                <div class="ring r2"></div>
-                <div class="ring-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M6 21V7l6-4 6 4v14M9 9h1m4 0h1m-6 4h1m4 0h1m-6 4h1m4 0h1"/></svg></div>
-                <div class="ring-dot" id="ringDot" style="top:15%; left:70%;">A</div>
-              </div>
-              <div class="radius-caption" id="radiusCaption">Menunggu lokasi Anda…</div>
-            </div>
-
-            <div id="lokasiDetailBox" style="margin-top:10px;"></div>
-
-            <button class="btn btn-ghost btn-block" style="margin-top:12px;" onclick="kalibrasiLokasiSaya()">📍 Kalibrasi: gunakan lokasi saya sebagai referensi</button>
-          </div>
-
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
-              <div class="section-label" style="margin-bottom:0;">Distribusi presensi bulanan</div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <select id="selectBulanStatistik" onchange="muatStatistikBulanan(this.value)" style="background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 8px; font-size:11.5px;"></select>
-                <button class="btn btn-ghost" style="padding:7px 11px; font-size:11px;" onclick="unduhPdfLaporan()">⬇ Unduh PDF</button>
-              </div>
-            </div>
-
-            <div class="donut-wrap">
-              <canvas id="chartDonut" width="150" height="150" style="max-width:150px; max-height:150px;"></canvas>
-              <div class="legend-list" id="legendDistribusi"></div>
-            </div>
-
-            <div class="stat-grid" style="margin-top:16px;">
-              <div class="stat-card"><div class="num" id="statJamKerja">0</div><div class="lbl">Jam Total Jam Kerja</div></div>
-              <div class="stat-card"><div class="num" id="statKetepatan">0%</div><div class="lbl">Ketepatan Waktu</div></div>
-              <div class="stat-card"><div class="num" id="statTingkatHadir">0%</div><div class="lbl">Tingkat Hadir</div></div>
-              <div class="stat-card"><div class="num" id="statHariVerif">0</div><div class="lbl">Hari Terverifikasi</div></div>
-              <div class="stat-card"><div class="num" id="statTarget">0</div><div class="lbl">Target Jam Bulan Ini</div></div>
-            </div>
-
-            <div class="section-label" style="margin-top:18px;">Rincian komponen kehadiran</div>
-            <div class="breakdown-grid" id="breakdownGrid"></div>
-          </div>
-
-          <div class="card">
-            <div class="section-label">Informasi pegawai aktif</div>
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-              <div class="user-avatar" style="width:46px; height:46px; font-size:16px;" id="infoAvatar">-</div>
-              <div>
-                <div style="font-weight:700; font-size:14px;" id="infoNama">-</div>
-                <div style="font-size:11.5px; color:var(--blue);" id="infoNip">-</div>
-                <div style="font-size:11px; color:var(--text-mute);" id="infoJabatan">-</div>
-              </div>
-            </div>
-            <div style="display:flex; gap:10px;">
-              <div class="stat-card" style="flex:1;"><div class="num" style="font-size:14px;" id="infoJamMasuk">-</div><div class="lbl">Jadwal Masuk</div></div>
-              <div class="stat-card" style="flex:1;"><div class="num" style="font-size:14px;" id="infoToleransi">-</div><div class="lbl">Toleransi Telat</div></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+    <!-- PEGAWAI -->
+    <div class="panel" id="panel-pegawai">
+      <div class="toolbar"><div></div><button class="btn-gold" onclick="bukaFormPegawai()">+ Tambah pegawai</button></div>
+      <table>
+        <thead><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Unit</th><th>Jadwal</th><th>Status</th><th></th></tr></thead>
+        <tbody id="pegawaiBody"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
+      </table>
     </div>
 
-    <!-- ============ TAB: RIWAYAT ============ -->
-    <div class="tab-content hidden" id="tab-riwayat">
-      <div class="card">
-        <div class="filter-row" id="riwayatFilter"></div>
-        <div id="riwayatList"><div class="empty">Memuat…</div></div>
-      </div>
-    </div>
-
-    <!-- ============ TAB: IZIN ============ -->
-    <div class="tab-content hidden" id="tab-izin">
-      <div class="card">
-        <button class="btn btn-primary btn-block" style="margin-bottom:16px;" onclick="bukaFormIzin()">+ Ajukan izin baru</button>
-        <div id="izinList"><div class="empty">Memuat…</div></div>
-      </div>
-    </div>
-
-    <!-- ============ TAB: CHAT ============ -->
-    <div class="tab-content hidden" id="tab-chat">
-      <div class="chat-shell">
-        <div class="chat-sidebar" id="chatSidebar">
-          <div class="chat-sidebar-head">
-            <input id="chatSearchInput" placeholder="Cari kontak…" oninput="filterKontakChat(this.value)">
-            <button class="btn btn-primary" style="padding:8px 10px; font-size:12px;" onclick="bukaModalGrupBaru()">+ Grup</button>
-          </div>
-          <div class="section-label" style="margin:14px 0 6px;">Grup</div>
-          <div id="daftarGrup"><div class="empty">Memuat…</div></div>
-          <div class="section-label" style="margin:16px 0 6px;">Kontak</div>
-          <div id="daftarKontakChat"><div class="empty">Memuat…</div></div>
-        </div>
-        <div class="chat-main" id="chatMain">
-          <div class="chat-empty" id="chatEmptyState">Pilih kontak atau grup di sebelah kiri untuk mulai chat.</div>
-          <div class="chat-thread hidden" id="chatThread">
-            <div class="chat-thread-head">
-              <button class="chat-back" onclick="tutupThreadChatMobile()">←</button>
-              <div class="user-avatar" id="threadAvatar">-</div>
-              <div><div class="chat-thread-name" id="threadNama">-</div><div class="chat-thread-status" id="threadStatus">-</div></div>
-            </div>
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-row">
-              <button class="btn btn-ghost" style="padding:9px 11px;" onclick="pilihGambarChat()">📷</button>
-              <input type="file" id="inputGambarChat" accept="image/*" class="hidden" onchange="kirimGambarChat(event)">
-              <input id="chatTextInput" placeholder="Tulis pesan…" onkeydown="if(event.key==='Enter') kirimTeksChat()">
-              <button class="btn btn-primary" style="border-radius:20px;" onclick="kirimTeksChat()">Kirim</button>
-            </div>
-          </div>
+    <!-- IZIN -->
+    <div class="panel" id="panel-izin">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select id="izinFilter" onchange="muatIzinAdmin()">
+            <option value="menunggu">Menunggu</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+            <option value="">Semua</option>
+          </select>
         </div>
       </div>
+      <table>
+        <thead><tr><th>Nama</th><th>Jenis</th><th>Tanggal</th><th>Keterangan</th><th>Status</th><th></th></tr></thead>
+        <tbody id="izinBody"><tr><td colspan="6" class="empty">Memuat…</td></tr></tbody>
+      </table>
     </div>
 
-    <!-- ============ TAB: PROFIL ============ -->
-    <div class="tab-content hidden" id="tab-profil">
-      <div class="main-grid">
-        <div class="col">
-          <div class="card">
-            <div class="profil-head">
-              <div class="avatar-lg" id="profilAvatar">-</div>
-              <div class="profil-name" id="profilNama">-</div>
-              <div class="profil-jab" id="profilJab">-</div>
-            </div>
-            <div id="profilInfo"></div>
-          </div>
+    <!-- LOKASI -->
+    <div class="panel" id="panel-lokasi">
+      <div class="modal-card" style="width:100%; max-width:420px; margin:0;">
+        <div class="modal-title">Titik lokasi kantor</div>
+        <div class="field-group"><label>Nama lokasi</label><input id="fLokasiNama" type="text"></div>
+        <div class="field-row">
+          <div class="field-group"><label>Latitude</label><input id="fLokasiLat" type="text"></div>
+          <div class="field-group"><label>Longitude</label><input id="fLokasiLng" type="text"></div>
         </div>
-        <div class="col">
-          <div class="card">
-            <div class="section-label">Verifikasi wajah</div>
-            <div class="face-status" id="faceStatusBox">
-              <div class="ic">🙂</div>
-              <div><div id="faceStatusText">Memeriksa status wajah terdaftar…</div></div>
-            </div>
-            <button class="btn btn-primary btn-block" onclick="bukaModalWajah()">Daftar / perbarui wajah untuk verifikasi absen</button>
-          </div>
-          <div class="card">
-            <div class="section-label">Login biometrik di HP ini</div>
-            <button class="btn btn-outline btn-block" id="btnToggleBiometrik" style="margin-bottom:14px;" onclick="toggleBiometrikPerangkatIni()">Aktifkan di HP ini</button>
-            <div style="font-size:11.5px; color:var(--text-mute); margin-bottom:8px;">Perangkat terdaftar (semua HP Anda)</div>
-            <div id="daftarPerangkat"><div class="empty">Memuat…</div></div>
-          </div>
-          <button class="btn btn-danger btn-block" onclick="logout()">Keluar akun</button>
-        </div>
+        <div class="field-group"><label>Radius toleransi (meter)</label><input id="fLokasiRadius" type="number"></div>
+        <button class="pill-btn edit" style="margin-bottom:14px;" onclick="gunakanLokasiSaatIni()">📍 Gunakan lokasi perangkat ini</button>
+        <button class="btn-primary" onclick="simpanLokasi()">Simpan lokasi kantor</button>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- ============ SUCCESS MODAL ============ -->
-<div class="modal-bg hidden" id="modalSuccess">
-  <div class="modal-sheet">
-    <div class="success-wrap">
-      <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
-      <div style="font-size:16px; font-weight:700; margin-bottom:6px;" id="successTitle">Presensi berhasil</div>
-      <div style="font-size:12.5px; color:var(--text-sec); line-height:1.6;" id="successSub">Data kehadiran Anda telah tercatat.</div>
-      <div class="card" style="margin-top:18px; text-align:left;" id="successCard"></div>
-      <button class="btn btn-primary btn-block" style="margin-top:20px;" onclick="tutupModalSukses()">Selesai</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MODAL IZIN ============ -->
-<div class="modal-bg hidden" id="modalIzin">
-  <div class="modal-sheet">
-    <div class="modal-title">Ajukan izin</div>
-    <div class="field-group">
-      <label>Jenis</label>
-      <select id="fIzinJenis"><option value="izin">Izin</option><option value="cuti">Cuti</option><option value="sakit">Sakit</option><option value="dinas_luar">Dinas luar</option></select>
+<!-- Modal tambah/edit pegawai -->
+<div class="modal-bg hidden" id="modalPegawai">
+  <div class="modal-card">
+    <div class="modal-title" id="modalPegawaiTitle">Tambah pegawai</div>
+    <input type="hidden" id="fPegawaiId">
+    <div class="field-row">
+      <div class="field-group"><label>NIP</label><input id="fNip" type="text"></div>
+      <div class="field-group"><label>Nama</label><input id="fNama" type="text"></div>
     </div>
     <div class="field-row">
-      <div class="field-group"><label>Mulai</label><input type="date" id="fIzinMulai"></div>
-      <div class="field-group"><label>Selesai</label><input type="date" id="fIzinSelesai"></div>
+      <div class="field-group"><label>Jabatan</label><input id="fJabatan" type="text"></div>
+      <div class="field-group"><label>Unit kerja</label><input id="fUnit" type="text"></div>
     </div>
-    <div class="field-group"><label>Keterangan</label><textarea id="fIzinAlasan" rows="3" placeholder="Contoh: keperluan keluarga"></textarea></div>
+    <div class="field-row">
+      <div class="field-group"><label>Jam masuk</label><input id="fJamMasuk" type="time" value="07:30"></div>
+      <div class="field-group"><label>Jam pulang</label><input id="fJamPulang" type="time" value="16:00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label>Toleransi telat (menit)</label><input id="fToleransi" type="number" value="15"></div>
+      <div class="field-group"><label>Peran</label><select id="fRole"><option value="pegawai">Pegawai</option><option value="admin">Admin</option></select></div>
+    </div>
+    <div class="field-group"><label id="fPassLabel">Kata sandi awal</label><input id="fPassword" type="text" placeholder="Minimal 6 karakter"></div>
+    <div class="field-group" id="fStatusWrap" style="display:none;">
+      <label>Status</label>
+      <select id="fStatus"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select>
+    </div>
+    <div class="field-group" id="fBiometrikWrap" style="display:none;">
+      <button class="pill-btn reject" style="width:100%;" onclick="cabutSemuaPerangkatPegawai()">🔒 Cabut semua akses login biometrik pegawai ini</button>
+      <div style="font-size:11px; color:var(--text-mute); margin-top:6px;">Gunakan jika HP pegawai hilang/dicuri — pegawai wajib masuk dengan NIP &amp; kata sandi lagi setelah ini.</div>
+    </div>
     <div class="modal-actions">
-      <button class="cancel" onclick="tutupModal('modalIzin')">Batal</button>
-      <button class="submit" onclick="kirimIzin()">Ajukan</button>
+      <button class="cancel" onclick="tutupModal('modalPegawai')">Batal</button>
+      <button class="submit" onclick="simpanPegawai()">Simpan</button>
     </div>
   </div>
 </div>
 
-<!-- ============ MODAL DAFTAR WAJAH ============ -->
-<div class="modal-bg hidden" id="modalWajah">
-  <div class="modal-sheet">
-    <div class="modal-title">Daftar wajah untuk verifikasi absen</div>
-    <p style="font-size:12px; color:var(--text-sec); margin-bottom:14px; line-height:1.6;">
-      Pastikan pencahayaan cukup dan wajah terlihat jelas menghadap kamera.
-    </p>
-    <div class="face-wrap">
-      <video id="videoWajahEl" autoplay playsinline muted></video>
-      <canvas id="canvasWajahEl" class="hidden"></canvas>
-      <div class="face-msg" id="faceWajahMsg">Memuat model deteksi wajah…</div>
-    </div>
-    <div class="modal-actions">
-      <button class="cancel" onclick="tutupModalWajah()">Batal</button>
-      <button class="submit" id="btnSimpanWajah" onclick="ambilDanSimpanWajah()" disabled>Ambil &amp; simpan</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MODAL KONFIRMASI LUAR RADIUS ============ -->
-<div class="modal-bg hidden" id="modalKonfirmasiRadius">
-  <div class="modal-sheet">
-    <div class="modal-title">⚠️ Posisi di luar radius kantor</div>
-    <p style="font-size:12.5px; color:var(--text-sec); line-height:1.6; margin-bottom:14px;" id="teksKonfirmasiRadius"></p>
-    <div class="modal-actions">
-      <button class="cancel" onclick="tutupModal('modalKonfirmasiRadius')">Batal</button>
-      <button class="submit" style="background:var(--warn); color:#1a1200;" onclick="konfirmasiTetapKirimLuarRadius()">Tetap kirim</button>
-    </div>
-  </div>
-</div>
-
-<div class="verif-overlay hidden" id="overlayVerifikasi">
-  <div class="spinner"></div>
-  <div id="overlayVerifikasiTeks">Memverifikasi…</div>
-</div>
-
-<!-- ============ MODAL GRUP BARU ============ -->
-<div class="modal-bg hidden" id="modalGrupBaru">
-  <div class="modal-sheet">
-    <div class="modal-title">Buat grup baru</div>
-    <div class="field-group"><label>Nama grup</label><input id="inNamaGrup" type="text" placeholder="Contoh: Tim Bidang Umum"></div>
-    <div class="field-group">
-      <label>Pilih anggota</label>
-      <div id="pilihAnggotaGrup" style="max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:9px; padding:4px 10px;"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="cancel" onclick="tutupModal('modalGrupBaru')">Batal</button>
-      <button class="submit" onclick="buatGrupBaru()">Buat grup</button>
-    </div>
-  </div>
-</div>
-
-<script src="app.js"></script>
-<script src="chat.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>
