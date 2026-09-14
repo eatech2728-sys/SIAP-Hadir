@@ -10,12 +10,12 @@
 // menyembunyikan nilai-nilai ini.
 // ============================================================
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDF8F293BSpLUt4O97uka7ibrflPRYBQwE",
-  authDomain: "chat-grup-c6a08.firebaseapp.com",
-  projectId: "chat-grup-c6a08",
-  storageBucket: "chat-grup-c6a08.firebasestorage.app", // tidak dipakai kode ini (gambar chat disimpan di Google Drive, bukan Firebase Storage) — boleh dibiarkan apa adanya
-  messagingSenderId: "1074397994403",
-  appId: "1:1074397994403:web:b5385fbe85a816984a8e16",
-  databaseURL: "https://chat-grup-c6a08-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_PROJECT_ID.appspot.com", // tidak dipakai kode ini (gambar chat disimpan di Google Drive, bukan Firebase Storage) — boleh dibiarkan apa adanya
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId: "PASTE_APP_ID",
+  databaseURL: "https://PASTE_PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app"
   // ^ sesuaikan region databaseURL dengan yang dipilih saat membuat Realtime Database
 };
