@@ -92,14 +92,17 @@
   .section-label{ font-size:12px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 
   .cam-card{ position:relative; background:#050810; border-radius:var(--radius); overflow:hidden; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; border:1px solid var(--border-soft); }
-  .cam-card video, .cam-card canvas{ width:100%; height:100%; object-fit:cover; }
-  .cam-hint{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); color:#fff; font-size:11px; background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:20px; }
-  .cam-lock{ position:absolute; inset:0; background:rgba(5,8,16,0.92); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:12px; }
+  .cam-card video, .cam-card canvas, .cam-card img{ width:100%; height:100%; object-fit:cover; }
+  .cam-card video{ transform:scaleX(-1); } /* pratinjau dicerminkan spt cermin asli — foto yg TERSIMPAN tetap orientasi normal, ini cuma tampilan */
+  .cam-hint{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); color:#fff; font-size:11px; background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:20px; z-index:2; }
+  .cam-lock{ position:absolute; inset:0; background:rgba(5,8,16,0.92); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:12px; z-index:3; }
   .cam-lock-icon{ width:48px; height:48px; border-radius:50%; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--text-sec); }
   .cam-lock-icon svg{ width:22px; height:22px; }
   .cam-lock-title{ font-size:14px; font-weight:700; }
   .cam-lock-text{ font-size:11.5px; color:var(--text-sec); max-width:280px; line-height:1.5; }
   .cam-lock-foot{ font-size:10.5px; color:var(--text-mute); display:flex; align-items:center; gap:5px; margin-top:6px; }
+  .face-guide{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:58%; height:78%; border:3px dashed rgba(255,255,255,0.6); border-radius:50%; z-index:2; pointer-events:none; }
+  .cam-float-btn{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:4; padding:11px 20px; border-radius:24px; box-shadow:0 6px 20px rgba(0,0,0,0.4); }
 
   textarea.catatan{ width:100%; padding:12px 13px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; resize:vertical; min-height:64px; outline:none; }
   textarea.catatan:focus{ border-color:var(--blue); }
@@ -179,6 +182,7 @@
   .face-status.ok .ic{ background:var(--success-bg); color:var(--success); }
   .face-wrap{ background:#050810; border-radius:var(--radius); overflow:hidden; position:relative; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
   .face-wrap video, .face-wrap canvas{ width:100%; height:100%; object-fit:cover; }
+  .face-wrap video{ transform:scaleX(-1); }
   .face-msg{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); color:#fff; font-size:11.5px; background:rgba(0,0,0,0.5); padding:6px 14px; border-radius:20px; text-align:center; }
   .device-item{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
   .device-item:last-child{ border-bottom:none; }
@@ -333,9 +337,12 @@
           <div class="card">
             <div class="section-label">Jendela kamera &amp; selfie</div>
             <div class="cam-card">
-              <video id="videoEl" autoplay playsinline muted></video>
+              <video id="videoEl" autoplay playsinline muted class="hidden"></video>
               <canvas id="canvasEl" class="hidden"></canvas>
-              <div class="cam-hint" id="camHint">Posisikan wajah di tengah bingkai</div>
+              <img id="fotoPreviewEl" class="hidden" alt="Pratinjau foto selfie">
+              <div class="face-guide hidden" id="faceGuide"></div>
+              <div class="cam-hint hidden" id="camHint">Posisikan wajah di dalam bingkai oval</div>
+
               <div class="cam-lock hidden" id="camLock">
                 <div class="cam-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
                 <div class="cam-lock-title">Akses Jendela Kamera Terkunci Biometrik</div>
@@ -346,6 +353,16 @@
                 </button>
                 <div class="cam-lock-foot">🛡️ Standar Web Authentication (FIDO2)</div>
               </div>
+
+              <div class="cam-lock" id="camPlaceholder">
+                <div class="cam-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+                <div class="cam-lock-title">Kamera belum aktif</div>
+                <div class="cam-lock-text">Kamera hanya menyala saat Anda menekan tombol ini — tidak aktif terus-menerus di latar belakang.</div>
+                <button class="btn btn-primary" onclick="bukaKameraManual()">📷 Aktifkan Kamera</button>
+              </div>
+
+              <button class="btn btn-primary cam-float-btn hidden" id="btnAmbilFotoSekarang" onclick="ambilFotoSekarang()">⬤ Ambil Foto</button>
+              <button class="btn btn-ghost cam-float-btn hidden" id="btnAmbilUlang" onclick="ambilUlangFoto()">↻ Ambil ulang</button>
             </div>
           </div>
 
@@ -575,6 +592,7 @@
     <div class="face-wrap">
       <video id="videoWajahEl" autoplay playsinline muted></video>
       <canvas id="canvasWajahEl" class="hidden"></canvas>
+      <div class="face-guide" style="width:64%; height:72%;"></div>
       <div class="face-msg" id="faceWajahMsg">Memuat model deteksi wajah…</div>
     </div>
     <div class="modal-actions">
