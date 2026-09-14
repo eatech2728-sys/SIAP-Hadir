@@ -28,6 +28,10 @@ function initFirebaseChat() {
   fbApp = firebase.initializeApp(FIREBASE_CONFIG);
   fbAuth = firebase.auth();
   fbDb = firebase.firestore();
+  // Beberapa jaringan (proxy kantor, VPN, antivirus tertentu) memblokir protokol QUIC yang
+  // dipakai koneksi real-time default Firestore, menyebabkan error WebChannel/QUIC berulang
+  // di console. Baris ini membuat Firestore otomatis beralih ke long-polling biasa bila itu terjadi.
+  fbDb.settings({ experimentalAutoDetectLongPolling: true, merge: true });
   fbRtdb = firebase.database();
   return true;
 }
@@ -43,11 +47,15 @@ async function masukChat() {
     const data = await call('getFirebaseToken');
     await fbAuth.signInWithCustomToken(data.token);
     chatUid = data.uid;
-    await fbDb.collection('users').doc(chatUid).set({
+    chatSudahSiap = true;
+
+    // Simpan profil chat (nama/jabatan) — tidak menghalangi kontak/grup dimuat kalau ini gagal
+    // (mis. koneksi Firestore lambat), supaya satu masalah kecil tidak mengunci seluruh fitur chat.
+    fbDb.collection('users').doc(chatUid).set({
       nama: user.nama, nip: user.nip, jabatan: user.jabatan || '', unit_kerja: user.unit_kerja || '',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    chatSudahSiap = true;
+    }, { merge: true }).catch(e => console.warn('Gagal menyimpan profil chat (non-fatal):', e.message));
+
     aturPresensiOnline();
     muatKontakChat();
     muatDaftarGrup();
