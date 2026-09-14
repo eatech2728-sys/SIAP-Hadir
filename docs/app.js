@@ -203,18 +203,20 @@ function pilihJenisPresensi(jenis) {
   perbaruiTampilanRadius();
 }
 
-// ---------- kamera & kunci biometrik ----------
+// ---------- kamera & kunci biometrik (kamera HANYA aktif saat pengguna menekan tombol) ----------
+let fotoTersimpanBase64 = null;
+
 function siapkanKameraCard() {
-  const lock = document.getElementById('camLock');
+  hentikanKamera();
+  fotoTersimpanBase64 = null;
+  setCheck('chkFoto', false);
   const aktif = user && biometrikAktifUntuk(user.nip);
   if (aktif && !kameraTerbukaBiometrik) {
-    lock.classList.remove('hidden');
-    hentikanKamera();
     setCheck('chkBiometrik', false);
+    aturTampilanKamera('locked');
   } else {
-    lock.classList.add('hidden');
     setCheck('chkBiometrik', true);
-    bukaKameraUtama();
+    aturTampilanKamera('placeholder');
   }
 }
 async function verifikasiBiometrikLokal() {
@@ -225,15 +227,51 @@ async function verifikasiBiometrikLokal() {
       publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), allowCredentials: [{ id: b64urlToBuf(credId), type: 'public-key' }], userVerification: 'required', timeout: 60000 }
     });
     kameraTerbukaBiometrik = true;
-    document.getElementById('camLock').classList.add('hidden');
     setCheck('chkBiometrik', true);
-    bukaKameraUtama();
+    aturTampilanKamera('placeholder'); // setelah verifikasi, tampilkan tombol "Aktifkan Kamera" — kamera belum langsung menyala
   } catch (e) { toast(e.message || 'Verifikasi biometrik gagal atau dibatalkan.', true); }
 }
-function bukaKameraUtama() {
+
+// Menampilkan salah satu dari 4 keadaan kartu kamera: locked | placeholder | live | captured
+function aturTampilanKamera(state) {
+  const els = ['videoEl', 'fotoPreviewEl', 'faceGuide', 'camHint', 'camPlaceholder', 'camLock', 'btnAmbilFotoSekarang', 'btnAmbilUlang']
+    .map(id => document.getElementById(id));
+  els.forEach(el => el && el.classList.add('hidden'));
+  const tampilkan = (...ids) => ids.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); });
+
+  if (state === 'locked') tampilkan('camLock');
+  else if (state === 'placeholder') tampilkan('camPlaceholder');
+  else if (state === 'live') tampilkan('videoEl', 'faceGuide', 'camHint', 'btnAmbilFotoSekarang');
+  else if (state === 'captured') tampilkan('fotoPreviewEl', 'btnAmbilUlang');
+}
+
+function bukaKameraManual() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-    .then(stream => { mediaStream = stream; document.getElementById('videoEl').srcObject = stream; })
+    .then(stream => {
+      mediaStream = stream;
+      document.getElementById('videoEl').srcObject = stream;
+      aturTampilanKamera('live');
+    })
     .catch(() => toast('Tidak dapat mengakses kamera. Izinkan akses kamera pada browser.', true));
+}
+function ambilFotoSekarang() {
+  const video = document.getElementById('videoEl');
+  if (!video.videoWidth) { toast('Kamera belum siap, tunggu sebentar.', true); return; }
+  const canvas = document.getElementById('canvasEl');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  // Menggambar frame video APA ADANYA (tidak mengikuti mirror tampilan CSS di atas) — jadi foto
+  // yang tersimpan berorientasi normal/wajar, mirror-nya murni bantuan visual saat mengambil foto saja.
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  fotoTersimpanBase64 = canvas.toDataURL('image/jpeg', 0.7);
+  document.getElementById('fotoPreviewEl').src = fotoTersimpanBase64;
+  hentikanKamera(); // matikan kamera segera setelah foto diambil — tidak menyala terus-menerus
+  aturTampilanKamera('captured');
+  setCheck('chkFoto', true);
+}
+function ambilUlangFoto() {
+  fotoTersimpanBase64 = null;
+  setCheck('chkFoto', false);
+  bukaKameraManual();
 }
 function hentikanKamera() { if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; } }
 function setCheck(id, ok, warnOnly) {
@@ -246,19 +284,43 @@ function setCheck(id, ok, warnOnly) {
 }
 
 // ---------- lokasi & visualisasi radius ----------
+let watchIdLokasi = null;
 function mulaiCekLokasi() {
   if (!navigator.geolocation) { toast('Perangkat tidak mendukung GPS.', true); return; }
+  if (watchIdLokasi != null) navigator.geolocation.clearWatch(watchIdLokasi);
+
   document.getElementById('radiusCaption').textContent = 'Mendeteksi lokasi…';
-  navigator.geolocation.getCurrentPosition(async pos => {
-    posisiSaatIni = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+  let terbaik = null, jumlahSampel = 0;
+  const BATAS_SAMPEL = 6, BATAS_WAKTU_MS = 6000;
+
+  const selesaikan = async () => {
+    if (watchIdLokasi != null) { navigator.geolocation.clearWatch(watchIdLokasi); watchIdLokasi = null; }
+    if (!terbaik) { toast('Gagal mengambil lokasi. Izinkan akses GPS pada browser.', true); setCheck('chkGps', false, true); return; }
+    posisiSaatIni = { latitude: terbaik.coords.latitude, longitude: terbaik.coords.longitude };
     setCheck('chkGps', true);
     const lbl = document.getElementById('chkGpsLabel');
-    if (lbl) lbl.textContent = 'GPS terdeteksi (±' + Math.round(pos.coords.accuracy) + 'm)';
+    if (lbl) lbl.textContent = 'GPS terdeteksi (±' + Math.round(terbaik.coords.accuracy) + 'm)';
     try {
       if (!lokasiKantor) lokasiKantor = await call('getLokasi');
       perbaruiTampilanRadius();
     } catch (e) { toast(e.message, true); }
-  }, () => { toast('Gagal mengambil lokasi. Izinkan akses GPS pada browser.', true); setCheck('chkGps', false, true); }, { enableHighAccuracy: true, timeout: 12000 });
+  };
+
+  const batasWaktu = setTimeout(selesaikan, BATAS_WAKTU_MS);
+  watchIdLokasi = navigator.geolocation.watchPosition(
+    pos => {
+      jumlahSampel++;
+      // Ambil pembacaan dengan akurasi TERBAIK (nilai accuracy terkecil = paling presisi),
+      // bukan sekadar pembacaan terakhir — mengurangi lompatan jarak yang tidak konsisten,
+      // terutama di laptop yang biasanya mengestimasi lokasi dari WiFi sekitar (bukan chip GPS asli).
+      if (!terbaik || pos.coords.accuracy < terbaik.coords.accuracy) terbaik = pos;
+      const cap = document.getElementById('radiusCaption');
+      if (cap) cap.textContent = `Menyempurnakan akurasi… (±${Math.round(pos.coords.accuracy)}m, sampel ke-${jumlahSampel})`;
+      if (pos.coords.accuracy <= 20 || jumlahSampel >= BATAS_SAMPEL) { clearTimeout(batasWaktu); selesaikan(); }
+    },
+    () => { clearTimeout(batasWaktu); toast('Gagal mengambil lokasi. Izinkan akses GPS pada browser.', true); setCheck('chkGps', false, true); },
+    { enableHighAccuracy: true, timeout: BATAS_WAKTU_MS, maximumAge: 0 }
+  );
 }
 function perbaruiTampilanRadius() {
   const namaEl = document.getElementById('namaKantorText');
@@ -313,15 +375,9 @@ function kalibrasiLokasiSaya() {
 async function mulaiAlurPresensi() {
   if (!currentJenis) { toast('Presensi hari ini sudah lengkap.', true); return; }
   if (!posisiSaatIni) { toast('Lokasi belum terdeteksi. Klik "Update GPS".', true); return; }
-  const video = document.getElementById('videoEl');
-  if (!video.videoWidth) { toast('Kamera belum aktif. Verifikasi biometrik dulu jika terkunci.', true); return; }
+  if (!fotoTersimpanBase64) { toast('Ambil foto selfie terlebih dahulu (tombol "Aktifkan Kamera").', true); return; }
 
-  const canvas = document.getElementById('canvasEl');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  const fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
-  setCheck('chkFoto', true);
-
+  const fotoBase64 = fotoTersimpanBase64;
   const btn = document.getElementById('btnKirimPresensi');
   btn.disabled = true;
 
@@ -329,7 +385,10 @@ async function mulaiAlurPresensi() {
   if (wajahDescriptorTersimpan) {
     document.getElementById('overlayVerifikasiTeks').textContent = 'Memverifikasi wajah…';
     document.getElementById('overlayVerifikasi').classList.remove('hidden');
-    try { wajahCocok = await verifikasiWajahDariCanvas(canvas); } catch (e) { wajahCocok = undefined; }
+    try {
+      const canvas = await gambarKeCanvasDariBase64(fotoBase64);
+      wajahCocok = await verifikasiWajahDariCanvas(canvas);
+    } catch (e) { wajahCocok = undefined; }
     document.getElementById('overlayVerifikasi').classList.add('hidden');
     if (wajahCocok === false) {
       const lanjut = confirm('Wajah pada foto tidak terverifikasi cocok dengan data terdaftar.\n\nOK untuk tetap lanjut (akan ditandai untuk ditinjau admin), Batal untuk mengambil ulang.');
@@ -351,6 +410,9 @@ function kirimPresensi(payload, btn) {
   call(action, payload).then(r => {
     tampilkanSukses(r);
     document.getElementById('inCatatan').value = '';
+    fotoTersimpanBase64 = null; // foto sudah terkirim, reset supaya presensi berikutnya ambil foto baru
+    aturTampilanKamera('placeholder');
+    setCheck('chkFoto', false);
     muatStatusHariIni();
     muatStatistikBulanan();
   }).catch(e => {
@@ -587,6 +649,19 @@ async function verifikasiWajahDariCanvas(canvas) {
   if (!deteksi) return false;
   const jarak = faceapi.euclideanDistance(deteksi.descriptor, wajahDescriptorTersimpan);
   return jarak < AMBANG_WAJAH;
+}
+function gambarKeCanvasDariBase64(base64) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('canvasEl');
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      resolve(canvas);
+    };
+    img.onerror = reject;
+    img.src = base64;
+  });
 }
 function bukaModalWajah() {
   document.getElementById('modalWajah').classList.remove('hidden');
