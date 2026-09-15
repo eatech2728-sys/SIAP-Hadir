@@ -1,7 +1,7 @@
 // ============================================================
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // ============================================================
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
+const API_BASE = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
 
 let token = localStorage.getItem('sh_token') || null;
 let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
@@ -448,18 +448,24 @@ function tampilkanSukses(r) {
 function tutupModalSukses() { document.getElementById('modalSuccess').classList.add('hidden'); }
 
 // ---------- statistik bulanan, grafik donat, PDF ----------
+function fmtBulanLokal(d) {
+  // "YYYY-MM" dari komponen tanggal LOKAL perangkat — jangan pakai toISOString() (itu UTC,
+  // bisa beda hari/bulan dengan waktu lokal Indonesia terutama dini hari, menyebabkan riwayat
+  // absen tampak "hilang" karena difilter ke bulan yang salah).
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
 function populateSelectBulan() {
   const sel = document.getElementById('selectBulanStatistik');
   const now = new Date();
   let html = '';
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    html += `<option value="${d.toISOString().slice(0, 7)}">${d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>`;
+    html += `<option value="${fmtBulanLokal(d)}">${d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>`;
   }
   sel.innerHTML = html;
 }
 function muatStatistikBulanan(bulan) {
-  bulan = bulan || document.getElementById('selectBulanStatistik').value || new Date().toISOString().slice(0, 7);
+  bulan = bulan || document.getElementById('selectBulanStatistik').value || fmtBulanLokal(new Date());
   call('statistikBulanan', { bulan }).then(s => {
     statistikTerakhir = s;
     document.getElementById('statJamKerja').textContent = s.total_jam_kerja;
@@ -554,9 +560,9 @@ function ujiNotifikasi() {
 // ---------- riwayat ----------
 function muatRiwayat(bulan) {
   const now = new Date();
-  bulan = bulan || now.toISOString().slice(0, 7);
+  bulan = bulan || fmtBulanLokal(now);
   const bulanList = [];
-  for (let i = 0; i < 3; i++) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); bulanList.push({ key: d.toISOString().slice(0, 7), label: d.toLocaleDateString('id-ID', { month: 'short' }) }); }
+  for (let i = 0; i < 3; i++) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); bulanList.push({ key: fmtBulanLokal(d), label: d.toLocaleDateString('id-ID', { month: 'short' }) }); }
   document.getElementById('riwayatFilter').innerHTML = bulanList.map(b =>
     `<span class="filter-chip ${b.key === bulan ? 'active' : ''}" onclick="muatRiwayat('${b.key}')">${b.label}</span>`).join('');
 
