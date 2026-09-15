@@ -145,9 +145,9 @@ a{color:var(--blue);}
 .checkbox-row{ display:flex; align-items:center; gap:8px; padding:8px 4px; font-size:13px; border-bottom:1px solid var(--border-soft); }
 @media (max-width:820px){
   .chat-shell{ height:calc(100vh - 180px); }
-  .chat-sidebar{ position:absolute; inset:0; z-index:2; background:var(--surface); width:100%; }
+  .chat-sidebar{ position:absolute; inset:0; z-index:3; background:var(--surface); width:100%; }
   .chat-sidebar.tersembunyi{ display:none; }
-  .chat-main{ position:absolute; inset:0; z-index:3; background:var(--surface); }
+  .chat-main{ position:absolute; inset:0; z-index:2; background:var(--surface); }
   .chat-main.tersembunyi{ display:none; }
   .chat-back{ display:block; }
 }
