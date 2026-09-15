@@ -12,7 +12,11 @@ service cloud.firestore {
 
     // Percakapan 1-on-1. ID dokumen = "<uidA>_<uidB>" (terurut abjad).
     match /chats/{chatId} {
-      allow read, update: if request.auth != null && request.auth.uid in resource.data.participants;
+      // resource == null berarti dokumennya BELUM ADA (percakapan baru pertama kali) — ini harus
+      // diizinkan supaya kode bisa mengecek "apakah chat ini sudah ada?" sebelum membuatnya.
+      // Tanpa baris ini, klik kontak baru akan gagal diam-diam (rule error dianggap ditolak).
+      allow read: if request.auth != null && (resource == null || request.auth.uid in resource.data.participants);
+      allow update: if request.auth != null && request.auth.uid in resource.data.participants;
       allow create: if request.auth != null && request.auth.uid in request.resource.data.participants
                     && request.resource.data.participants.size() == 2;
 
