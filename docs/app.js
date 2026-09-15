@@ -1,7 +1,7 @@
 // ============================================================
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // ============================================================
-const API_BASE = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
 
 let token = localStorage.getItem('sh_token') || null;
 let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
