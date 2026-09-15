@@ -114,22 +114,26 @@ function pantauStatusOnline(uid) {
 function chatIdUntuk(a, b) { return [a, b].sort().join('_'); }
 
 async function bukaChatDenganKontak(otherUid, nama) {
-  currentChatType = 'chat';
-  currentChatOtherUid = otherUid;
-  const chatId = chatIdUntuk(chatUid, otherUid);
-  currentChatRef = fbDb.collection('chats').doc(chatId);
-  const snap = await currentChatRef.get();
-  if (!snap.exists) {
-    await currentChatRef.set({
-      participants: [chatUid, otherUid], lastMessage: '',
-      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastRead: {}
-    });
+  try {
+    currentChatType = 'chat';
+    currentChatOtherUid = otherUid;
+    const chatId = chatIdUntuk(chatUid, otherUid);
+    currentChatRef = fbDb.collection('chats').doc(chatId);
+    const snap = await currentChatRef.get();
+    if (!snap.exists) {
+      await currentChatRef.set({
+        participants: [chatUid, otherUid], lastMessage: '',
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastRead: {}
+      });
+    }
+    document.getElementById('threadNama').textContent = nama;
+    document.getElementById('threadAvatar').textContent = inisial(nama);
+    document.getElementById('threadStatus').textContent = '-';
+    bukaThreadUI();
+    dengarkanPesan();
+  } catch (e) {
+    toast('Gagal membuka chat: ' + e.message, true);
   }
-  document.getElementById('threadNama').textContent = nama;
-  document.getElementById('threadAvatar').textContent = inisial(nama);
-  document.getElementById('threadStatus').textContent = '-';
-  bukaThreadUI();
-  dengarkanPesan();
 }
 
 // ---------- grup ----------
@@ -207,7 +211,7 @@ function dengarkanPesan() {
     const data = doc.data();
     lastReadTerkini = (data && data.lastRead) || {};
     gambarUlangPesan();
-  });
+  }, err => toast('Gagal memuat status baca: ' + err.message, true));
 
   unsubMessages = currentChatRef.collection('messages').orderBy('createdAt', 'asc').limitToLast(150)
     .onSnapshot(qs => {
