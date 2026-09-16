@@ -32,8 +32,27 @@ function initFirebaseChat() {
   // dipakai koneksi real-time default Firestore, menyebabkan error WebChannel/QUIC berulang
   // di console. Baris ini membuat Firestore otomatis beralih ke long-polling biasa bila itu terjadi.
   fbDb.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+  // Cache offline: kalau koneksi Firestore sempat putus sesaat, perintah baca/tulis tetap
+  // diantrikan secara lokal (bukan langsung gagal dengan "client is offline") dan otomatis
+  // disinkronkan begitu koneksi pulih. Gagal aktif di beberapa kasus (mis. banyak tab
+  // terbuka sekaligus) — tidak fatal, chat tetap jalan, cuma tanpa cache ini.
+  fbDb.enablePersistence({ synchronizeTabs: true }).catch(e => console.warn('Firestore persistence tidak aktif:', e.code));
   fbRtdb = firebase.database();
   return true;
+}
+
+// Membungkus operasi Firestore dengan percobaan ulang otomatis — berguna khusus untuk error
+// "client is offline" yang biasanya cuma hiccup koneksi sesaat, bukan benar-benar offline.
+async function denganCobaUlang_(fn, percobaanMaks = 2) {
+  let terakhir;
+  for (let i = 0; i <= percobaanMaks; i++) {
+    try { return await fn(); }
+    catch (e) {
+      terakhir = e;
+      if (i < percobaanMaks) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw terakhir;
 }
 
 async function masukChat() {
@@ -119,12 +138,12 @@ async function bukaChatDenganKontak(otherUid, nama) {
     currentChatOtherUid = otherUid;
     const chatId = chatIdUntuk(chatUid, otherUid);
     currentChatRef = fbDb.collection('chats').doc(chatId);
-    const snap = await currentChatRef.get();
+    const snap = await denganCobaUlang_(() => currentChatRef.get());
     if (!snap.exists) {
-      await currentChatRef.set({
+      await denganCobaUlang_(() => currentChatRef.set({
         participants: [chatUid, otherUid], lastMessage: '',
         lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastRead: {}
-      });
+      }));
     }
     document.getElementById('threadNama').textContent = nama;
     document.getElementById('threadAvatar').textContent = inisial(nama);
@@ -132,7 +151,10 @@ async function bukaChatDenganKontak(otherUid, nama) {
     bukaThreadUI();
     dengarkanPesan();
   } catch (e) {
-    toast('Gagal membuka chat: ' + e.message, true);
+    const pesan = e.code === 'unavailable' || /offline/i.test(e.message)
+      ? 'Koneksi ke server chat sempat terputus. Coba tekan kontak ini sekali lagi (tidak ada hubungannya dengan status online lawan bicara).'
+      : 'Gagal membuka chat: ' + e.message;
+    toast(pesan, true);
   }
 }
 
