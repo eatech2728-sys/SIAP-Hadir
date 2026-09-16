@@ -1,11 +1,12 @@
 // ============================================================
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // ============================================================
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
+const API_BASE = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
 
 let token = localStorage.getItem('sh_token') || null;
 let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
-let currentJenis = 'masuk';
+let currentJenis = 'masuk'; // 'masuk' | 'pulang' | null — ditentukan OTOMATIS oleh status hari ini, bukan dipilih manual
+let sedangDinasLuar = false; // penanda TAMBAHAN (bukan pengganti currentJenis) — bisa menyertai masuk ATAUPUN pulang
 let posisiSaatIni = null;
 let mediaStream = null;
 let mediaStreamWajah = null;
@@ -61,7 +62,16 @@ function call(action, payload = {}) {
     .then(r => r.json())
     .then(data => {
       updatePingBadge(Math.round(performance.now() - t0));
-      if (data && data.error) throw new Error(data.error);
+      if (data && data.error) {
+        // Sesi habis/tidak valid -> otomatis kembali ke layar login, tidak perlu pengguna
+        // menyadari sendiri lewat pesan error yang berulang-ulang.
+        if (action !== 'login' && action !== 'loginBiometrik' &&
+            (data.error.indexOf('Sesi kedaluwarsa') !== -1 || data.error.indexOf('Belum login') !== -1)) {
+          toast('Sesi Anda telah berakhir. Silakan masuk kembali.', true);
+          logout();
+        }
+        throw new Error(data.error);
+      }
       return data;
     })
     .catch(e => { updatePingBadge(null); throw e; });
@@ -174,7 +184,7 @@ function jalankanJam() {
   setInterval(tick, 1000);
 }
 
-// ---------- status presensi hari ini & pilihan jenis ----------
+// ---------- status presensi hari ini (otomatis, tidak dipilih manual) ----------
 function muatStatusHariIni() {
   call('absenHariIni').then(row => {
     const badge = document.getElementById('statusHariIni');
@@ -185,22 +195,37 @@ function muatStatusHariIni() {
   }).catch(() => {});
 }
 function perbaruiPilihanJenisUI() {
+  const badge = document.getElementById('jenisStatusBadge');
+  const title = document.getElementById('jenisStatusTitle');
+  const sub = document.getElementById('jenisStatusSub');
+  const chkDinas = document.getElementById('chkDinasLuar');
+  const btn = document.getElementById('btnKirimPresensi');
+
   if (!currentJenis) {
-    document.querySelectorAll('.jenis-btn').forEach(b => { b.classList.remove('active'); b.disabled = true; });
-    document.getElementById('btnKirimPresensi').disabled = true;
+    badge.classList.add('selesai');
+    title.textContent = 'Presensi hari ini sudah lengkap';
+    sub.textContent = 'Sampai jumpa besok';
+    chkDinas.disabled = true;
+    btn.disabled = true;
     document.getElementById('btnKirimPresensiLabel').textContent = 'Presensi hari ini sudah lengkap';
     return;
   }
-  document.querySelectorAll('.jenis-btn').forEach(b => b.disabled = false);
-  document.getElementById('btnKirimPresensi').disabled = false;
-  pilihJenisPresensi(currentJenis);
-}
-function pilihJenisPresensi(jenis) {
-  currentJenis = jenis;
-  document.querySelectorAll('.jenis-btn').forEach(b => b.classList.toggle('active', b.dataset.jenis === jenis));
-  document.getElementById('btnKirimPresensiLabel').textContent =
-    jenis === 'pulang' ? 'Kirim Presensi Pulang Sekarang' : jenis === 'dinas_luar' ? 'Kirim Presensi Dinas Luar Sekarang' : 'Kirim Presensi Masuk Sekarang';
+  badge.classList.remove('selesai');
+  chkDinas.disabled = false;
+  btn.disabled = false;
+  if (currentJenis === 'pulang') { title.textContent = 'Absen Pulang'; sub.textContent = 'Selesai jam kerja'; }
+  else { title.textContent = 'Absen Masuk'; sub.textContent = 'Mulai jam kerja'; }
+  perbaruiLabelTombolKirim();
   perbaruiTampilanRadius();
+}
+function toggleDinasLuar(checked) {
+  sedangDinasLuar = checked;
+  perbaruiLabelTombolKirim();
+  perbaruiTampilanRadius();
+}
+function perbaruiLabelTombolKirim() {
+  const dasar = currentJenis === 'pulang' ? 'Kirim Presensi Pulang' : 'Kirim Presensi Masuk';
+  document.getElementById('btnKirimPresensiLabel').textContent = dasar + (sedangDinasLuar ? ' (Dinas Luar)' : ' Sekarang');
 }
 
 // ---------- kamera & kunci biometrik (kamera HANYA aktif saat pengguna menekan tombol) ----------
@@ -351,7 +376,7 @@ function perbaruiTampilanRadius() {
       <b>Di Luar Radius Kantor</b><br>Jarak Anda ${formatJarak(jarak)} (melebihi batas radius ${lokasiKantor.radius_meter}m). Konfirmasi akan diminta saat presensi dikirim.
     </div>`;
 
-  warnBox.classList.toggle('hidden', dalam || currentJenis === 'dinas_luar');
+  warnBox.classList.toggle('hidden', dalam || sedangDinasLuar);
   setCheck('chkRadius', dalam, !dalam);
   const chkLbl = document.getElementById('chkRadiusLabel');
   if (chkLbl) chkLbl.textContent = dalam ? 'Dalam radius kantor' : 'Luar radius (' + formatJarak(jarak) + ')';
@@ -399,7 +424,7 @@ async function mulaiAlurPresensi() {
   const payload = {
     latitude: posisiSaatIni.latitude, longitude: posisiSaatIni.longitude, foto: fotoBase64,
     catatan: document.getElementById('inCatatan').value.trim(),
-    jenis: currentJenis === 'dinas_luar' ? 'dinas_luar' : 'kantor'
+    jenis: sedangDinasLuar ? 'dinas_luar' : 'kantor'
   };
   if (wajahCocok !== undefined) payload.wajah_cocok = wajahCocok;
 
@@ -413,13 +438,16 @@ function kirimPresensi(payload, btn) {
     fotoTersimpanBase64 = null; // foto sudah terkirim, reset supaya presensi berikutnya ambil foto baru
     aturTampilanKamera('placeholder');
     setCheck('chkFoto', false);
+    sedangDinasLuar = false;
+    const chkDinas = document.getElementById('chkDinasLuar');
+    if (chkDinas) chkDinas.checked = false;
     muatStatusHariIni();
     muatStatistikBulanan();
   }).catch(e => {
     if (e.message === 'LUAR_RADIUS') {
       pendingPresensiPayload = payload;
       document.getElementById('teksKonfirmasiRadius').textContent =
-        'Anda mencoba mengirim presensi dari luar radius kantor. Lanjutkan sebagai kehadiran luar radius, atau batalkan dan pilih "Dinas Luar" jika ini kunjungan tugas resmi.';
+        'Anda mencoba mengirim presensi dari luar radius kantor. Lanjutkan sebagai kehadiran luar radius, atau centang "Dinas Luar" jika ini kunjungan tugas resmi.';
       document.getElementById('modalKonfirmasiRadius').classList.remove('hidden');
     } else {
       toast(e.message, true);
@@ -437,7 +465,7 @@ function konfirmasiTetapKirimLuarRadius() {
 }
 function tampilkanSukses(r) {
   document.getElementById('successTitle').textContent =
-    currentJenis === 'pulang' ? 'Presensi pulang berhasil' : currentJenis === 'dinas_luar' ? 'Presensi dinas luar berhasil' : 'Presensi masuk berhasil';
+    currentJenis === 'pulang' ? 'Presensi pulang berhasil' : 'Presensi masuk berhasil';
   document.getElementById('successCard').innerHTML = `
     <div class="info-row"><span class="k">Waktu</span><span class="v">${r.jam_masuk || r.jam_pulang || '-'}</span></div>
     ${r.status ? `<div class="info-row"><span class="k">Status</span><span class="v">${r.status}</span></div>` : ''}
