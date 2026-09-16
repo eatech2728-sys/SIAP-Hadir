@@ -44,7 +44,13 @@ function call(action, payload = {}) {
   })
     .then(r => r.json())
     .then(data => {
-      if (data && data.error) throw new Error(data.error);
+      if (data && data.error) {
+        if (action !== 'login' && (data.error.indexOf('Sesi kedaluwarsa') !== -1 || data.error.indexOf('Belum login') !== -1)) {
+          toast('Sesi Anda telah berakhir. Silakan masuk kembali.', true);
+          logout();
+        }
+        throw new Error(data.error);
+      }
       return data;
     });
 }
