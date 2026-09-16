@@ -113,7 +113,7 @@ a{color:var(--blue);}
 ::-webkit-scrollbar-track{ background:transparent; }
 
 /* ---------- CHAT ---------- */
-.chat-shell{ display:flex; height:calc(100vh - 220px); min-height:480px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius); overflow:hidden; }
+.chat-shell{ position:relative; display:flex; height:calc(100vh - 220px); min-height:480px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius); overflow:hidden; }
 .chat-sidebar{ width:290px; flex-shrink:0; border-right:1px solid var(--border-soft); display:flex; flex-direction:column; padding:14px; overflow-y:auto; }
 .chat-sidebar-head{ display:flex; gap:8px; margin-bottom:6px; }
 .chat-sidebar-head input{ flex:1; padding:9px 11px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:12.5px; outline:none; }
