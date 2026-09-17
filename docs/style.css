@@ -118,6 +118,9 @@ a{color:var(--blue);}
 .chat-sidebar-head{ display:flex; gap:8px; margin-bottom:6px; }
 .chat-sidebar-head input{ flex:1; padding:9px 11px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:12.5px; outline:none; }
 .chat-list-item{ display:flex; align-items:center; gap:10px; padding:9px 8px; border-radius:10px; cursor:pointer; }
+.chat-list-item .unread-dot{ width:9px; height:9px; border-radius:50%; background:var(--danger); margin-left:auto; flex-shrink:0; }
+.chat-list-item.punya-baru .lbl{ font-weight:800; color:var(--text); }
+.chat-list-item.punya-baru .sub{ color:var(--text); font-weight:600; }
 .chat-list-item:hover{ background:var(--surface-2); }
 .chat-list-item .lbl{ font-size:13px; font-weight:600; }
 .chat-list-item .sub{ font-size:11px; color:var(--text-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px; }
