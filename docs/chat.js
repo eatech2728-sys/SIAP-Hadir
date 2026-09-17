@@ -17,6 +17,9 @@ let unsubChatDoc = null;
 let pesanTerkini = [];
 let lastReadTerkini = {};
 let daftarKontakElemenTerpasang = false;
+let unreadChatsMap = {};   // { uidLawanBicara: true/false } — punya pesan belum dibaca?
+let unreadGroupsMap = {};  // { groupId: true/false }
+let unsubSemuaChat = null;
 
 function initFirebaseChat() {
   if (fbApp) return true;
@@ -78,6 +81,7 @@ async function masukChat() {
     aturPresensiOnline();
     muatKontakChat();
     muatDaftarGrup();
+    pantauSemuaChatBelumDibaca();
   } catch (e) {
     document.getElementById('chatEmptyState').textContent = 'Gagal menyambungkan ke chat: ' + e.message;
     toast('Gagal menyambungkan ke chat: ' + e.message, true);
@@ -104,12 +108,47 @@ function muatKontakChat() {
 function renderDaftarKontak(rows) {
   const el = document.getElementById('daftarKontakChat');
   if (!rows.length) { el.innerHTML = '<div class="empty">Belum ada kontak lain.</div>'; return; }
-  el.innerHTML = rows.map(k => `
-    <div class="chat-list-item" data-nama="${escapeAttr(k.nama.toLowerCase())}" onclick="bukaChatDenganKontak('${k.uid}', '${escapeAttr(k.nama)}')">
+  el.innerHTML = rows.map(k => {
+    const belumDibaca = !!unreadChatsMap[k.uid];
+    return `
+    <div class="chat-list-item ${belumDibaca ? 'punya-baru' : ''}" data-nama="${escapeAttr(k.nama.toLowerCase())}" onclick="bukaChatDenganKontak('${k.uid}', '${escapeAttr(k.nama)}')">
       <div class="user-avatar">${inisial(k.nama)}<span class="presence-dot" id="dot-${k.uid}"></span></div>
       <div><div class="lbl">${k.nama}</div><div class="sub">${k.jabatan || k.unit_kerja || '-'}</div></div>
-    </div>`).join('');
+      ${belumDibaca ? '<span class="unread-dot"></span>' : ''}
+    </div>`;
+  }).join('');
   rows.forEach(k => pantauStatusOnline(k.uid));
+}
+// Memantau SEMUA percakapan 1-on-1 milik pegawai ini secara live (bukan cuma yang sedang
+// dibuka) supaya badge "belum dibaca" tetap akurat walau pengguna sedang di tab lain.
+function pantauSemuaChatBelumDibaca() {
+  if (unsubSemuaChat) unsubSemuaChat();
+  unsubSemuaChat = fbDb.collection('chats').where('participants', 'array-contains', chatUid)
+    .onSnapshot(qs => {
+      unreadChatsMap = {};
+      qs.forEach(doc => {
+        const d = doc.data();
+        const otherUid = (d.participants || []).find(u => u !== chatUid);
+        if (!otherUid) return;
+        unreadChatsMap[otherUid] = pesanBelumDibaca_(d);
+      });
+      renderDaftarKontak(daftarKontakCache);
+      perbaruiBadgeChat();
+    }, e => console.warn('pantauSemuaChatBelumDibaca:', e.message));
+}
+function pesanBelumDibaca_(d) {
+  if (!d.lastMessageBy || d.lastMessageBy === chatUid) return false; // pesan terakhir dari saya sendiri = bukan "belum dibaca"
+  const lastRead = d.lastRead && d.lastRead[chatUid];
+  const lastReadMs = lastRead && lastRead.toMillis ? lastRead.toMillis() : 0;
+  const lastMsgMs = d.lastMessageAt && d.lastMessageAt.toMillis ? d.lastMessageAt.toMillis() : 0;
+  return lastMsgMs > lastReadMs;
+}
+function perbaruiBadgeChat() {
+  const total = Object.values(unreadChatsMap).filter(Boolean).length + Object.values(unreadGroupsMap).filter(Boolean).length;
+  const badge = document.getElementById('chatTabBadge');
+  if (!badge) return;
+  if (total > 0) { badge.textContent = total > 9 ? '9+' : String(total); badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
 }
 function filterKontakChat(q) {
   q = (q || '').toLowerCase();
@@ -199,15 +238,22 @@ function bukaGrup(groupId, nama) {
 function muatDaftarGrup() {
   fbDb.collection('groups').where('members', 'array-contains', chatUid).onSnapshot(qs => {
     const el = document.getElementById('daftarGrup');
-    if (qs.empty) { el.innerHTML = '<div class="empty">Belum ada grup.</div>'; return; }
+    unreadGroupsMap = {};
+    if (qs.empty) { el.innerHTML = '<div class="empty">Belum ada grup.</div>'; perbaruiBadgeChat(); return; }
     const rows = [];
     qs.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));
+    rows.forEach(g => { unreadGroupsMap[g.id] = pesanBelumDibaca_(g); });
     rows.sort((a, b) => (b.lastMessageAt && b.lastMessageAt.toMillis ? b.lastMessageAt.toMillis() : 0) - (a.lastMessageAt && a.lastMessageAt.toMillis ? a.lastMessageAt.toMillis() : 0));
-    el.innerHTML = rows.map(g => `
-      <div class="chat-list-item" onclick="bukaGrup('${g.id}', '${escapeAttr(g.name)}')">
+    el.innerHTML = rows.map(g => {
+      const belumDibaca = unreadGroupsMap[g.id];
+      return `
+      <div class="chat-list-item ${belumDibaca ? 'punya-baru' : ''}" onclick="bukaGrup('${g.id}', '${escapeAttr(g.name)}')">
         <div class="user-avatar">${inisial(g.name)}</div>
         <div><div class="lbl">${g.name}</div><div class="sub">${g.lastMessage || 'Belum ada pesan'}</div></div>
-      </div>`).join('');
+        ${belumDibaca ? '<span class="unread-dot"></span>' : ''}
+      </div>`;
+    }).join('');
+    perbaruiBadgeChat();
   }, e => console.warn('muatDaftarGrup:', e.message));
 }
 
@@ -283,7 +329,7 @@ function kirimTeksChat() {
   input.value = '';
   currentChatRef.collection('messages').add({ senderUid: chatUid, text: text, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
     .catch(e => toast('Gagal mengirim pesan: ' + e.message, true));
-  currentChatRef.set({ lastMessage: text, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  currentChatRef.set({ lastMessage: text, lastMessageBy: chatUid, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
 }
 function pilihGambarChat() { document.getElementById('inputGambarChat').click(); }
 function kirimGambarChat(ev) {
@@ -297,7 +343,7 @@ function kirimGambarChat(ev) {
     call('uploadGambarChat', { base64 })
       .then(r => {
         refSaatDikirim.collection('messages').add({ senderUid: chatUid, imageUrl: r.url, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        refSaatDikirim.set({ lastMessage: '📷 Foto', lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        refSaatDikirim.set({ lastMessage: '📷 Foto', lastMessageBy: chatUid, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       })
       .catch(e => toast('Gagal mengirim gambar: ' + e.message, true));
   });
