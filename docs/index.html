@@ -52,6 +52,8 @@
   #selectTema:focus{ outline:none; border-color:var(--blue); }
   .header-tab{ background:none; border:none; padding:8px 16px; border-radius:9px; font-size:12.5px; font-weight:600; color:var(--text-sec); }
   .header-tab.active{ background:var(--blue); color:#fff; }
+  .header-tab{ position:relative; }
+  .tab-badge{ position:absolute; top:2px; right:4px; min-width:16px; height:16px; padding:0 4px; border-radius:10px; background:var(--danger); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; line-height:1; }
   .user-card{ display:flex; align-items:center; gap:10px; padding:6px 12px 6px 6px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); }
   .user-avatar{ width:34px; height:34px; border-radius:9px; background:var(--blue-bg); color:var(--blue); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
   .user-name{ font-size:12.5px; font-weight:700; line-height:1.2; }
@@ -259,7 +261,7 @@
         <button class="header-tab active" data-tab="presensi" onclick="goTo('presensi')">Presensi</button>
         <button class="header-tab" data-tab="riwayat" onclick="goTo('riwayat')">Riwayat</button>
         <button class="header-tab" data-tab="izin" onclick="goTo('izin')">Izin</button>
-        <button class="header-tab" data-tab="chat" onclick="goTo('chat')">Chat</button>
+        <button class="header-tab" data-tab="chat" onclick="goTo('chat')">Chat<span class="tab-badge hidden" id="chatTabBadge">0</span></button>
         <button class="header-tab" data-tab="profil" onclick="goTo('profil')">Profil</button>
       </div>
 
