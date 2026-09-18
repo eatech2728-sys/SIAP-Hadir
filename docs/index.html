@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>SIAP-Hadir — Presensi Pegawai</title>
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -18,10 +21,10 @@
   .wrap{ max-width:1360px; margin:0 auto; padding:0 20px 60px; }
 
   /* ---------- LOGIN ---------- */
-  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 20%, var(--surface-2) 0%, var(--bg) 60%); padding:20px; }
-  .login-card{ width:380px; max-width:100%; background:var(--surface); border:1px solid var(--border-soft); border-radius:18px; padding:32px 28px; }
-  .login-badge{ width:56px; height:56px; border-radius:14px; background:var(--blue); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
-  .login-badge svg{ width:28px; height:28px; color:#fff; }
+  #screen-login{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(rgba(6,12,26,0.72), rgba(6,12,26,0.82)), url('wallpaper.jpg') center/cover no-repeat; padding:20px; }
+  .login-card{ width:380px; max-width:100%; background:var(--surface); border:1px solid var(--border-soft); border-radius:18px; padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.45); }
+  .login-badge{ width:64px; height:64px; border-radius:16px; overflow:hidden; margin-bottom:16px; }
+  .login-badge img{ width:100%; height:100%; object-fit:cover; display:block; }
   .login-title{ font-size:21px; font-weight:700; }
   .login-sub{ font-size:12.5px; color:var(--text-sec); margin:4px 0 24px; }
   .field{ margin-bottom:14px; }
@@ -37,7 +40,7 @@
   #appHeader{ position:sticky; top:0; z-index:50; background:rgba(10,17,32,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--border-soft); }
   .header-row{ max-width:1360px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:10px; margin-right:6px; }
-  .brand-icon{ width:38px; height:38px; border-radius:10px; background:var(--blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .brand-icon{ width:38px; height:38px; border-radius:10px; background:var(--blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; }
   .brand-icon svg{ width:20px; height:20px; color:#fff; }
   .brand-name{ font-size:14.5px; font-weight:700; line-height:1.2; }
   .brand-sub{ font-size:11px; color:var(--text-mute); }
@@ -220,7 +223,7 @@
 <div class="screen" id="screen-login">
   <div class="login-card">
     <div class="login-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+      <img src="icon-192.png" alt="SIAP-Hadir">
     </div>
     <div class="login-title">SIAP-Hadir</div>
     <div class="login-sub">Presensi pegawai berbasis lokasi & biometrik</div>
@@ -245,7 +248,7 @@
   <div id="appHeader">
     <div class="header-row">
       <div class="brand">
-        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <div class="brand-icon"><img src="icon-192.png" alt="SIAP-Hadir" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;"></div>
         <div><div class="brand-name">SIAP-Hadir</div><div class="brand-sub">Presensi Lokasi &amp; Biometrik</div></div>
       </div>
       <span class="pill ok" id="pillServer"><span class="pill-dot"></span><span id="pillServerText">Server: —</span></span>
