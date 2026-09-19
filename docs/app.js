@@ -1,10 +1,25 @@
 // ============================================================
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // ============================================================
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
+const API_BASE = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+
+// Membaca JSON dari localStorage dengan aman — kalau isinya rusak/korup (mis. literal teks
+// "undefined" akibat bug lama, atau JSON tidak valid), otomatis dianggap kosong & dibersihkan,
+// alih-alih membuat seluruh skrip crash saat baru dimuat (yang berakibat "Cannot access user
+// before initialization" di seluruh fungsi lain).
+function amanAmbilLocalStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw || raw === 'undefined' || raw === 'null') return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
 
 let token = localStorage.getItem('sh_token') || null;
-let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
+let user = amanAmbilLocalStorage('sh_user');
 let currentJenis = 'masuk'; // 'masuk' | 'pulang' | null — ditentukan OTOMATIS oleh status hari ini, bukan dipilih manual
 let sedangDinasLuar = false; // penanda TAMBAHAN (bukan pengganti currentJenis) — bisa menyertai masuk ATAUPUN pulang
 let posisiSaatIni = null;
@@ -113,6 +128,7 @@ function login() {
 
   call('login', { nip, password: pass })
     .then(data => {
+      if (!data || !data.token || !data.pegawai) throw new Error('Respons server tidak lengkap. Coba lagi.');
       token = data.token; user = data.pegawai;
       localStorage.setItem('sh_token', token);
       localStorage.setItem('sh_user', JSON.stringify(user));
@@ -320,7 +336,11 @@ function mulaiCekLokasi() {
 
   const selesaikan = async () => {
     if (watchIdLokasi != null) { navigator.geolocation.clearWatch(watchIdLokasi); watchIdLokasi = null; }
-    if (!terbaik) { toast('Gagal mengambil lokasi. Izinkan akses GPS pada browser.', true); setCheck('chkGps', false, true); return; }
+    if (!terbaik) {
+      toast('Lokasi belum berhasil didapat dalam ' + (BATAS_WAKTU_MS / 1000) + ' detik (bukan berarti izin ditolak — coba tekan "Update GPS" lagi, atau pindah ke area dengan sinyal GPS/WiFi lebih baik).', true);
+      setCheck('chkGps', false, true);
+      return;
+    }
     posisiSaatIni = { latitude: terbaik.coords.latitude, longitude: terbaik.coords.longitude };
     setCheck('chkGps', true);
     const lbl = document.getElementById('chkGpsLabel');
@@ -343,7 +363,17 @@ function mulaiCekLokasi() {
       if (cap) cap.textContent = `Menyempurnakan akurasi… (±${Math.round(pos.coords.accuracy)}m, sampel ke-${jumlahSampel})`;
       if (pos.coords.accuracy <= 20 || jumlahSampel >= BATAS_SAMPEL) { clearTimeout(batasWaktu); selesaikan(); }
     },
-    () => { clearTimeout(batasWaktu); toast('Gagal mengambil lokasi. Izinkan akses GPS pada browser.', true); setCheck('chkGps', false, true); },
+    (err) => {
+      clearTimeout(batasWaktu);
+      // Pesan disesuaikan dengan kode error sesungguhnya — jangan selalu bilang "izin ditolak"
+      // padahal penyebabnya bisa beda (timeout atau posisi tidak tersedia sama sekali).
+      let pesan = 'Gagal mengambil lokasi.';
+      if (err && err.code === 1) pesan = 'Akses lokasi ditolak oleh browser. Cek ikon gembok/lokasi di address bar, pastikan situs ini diizinkan mengakses lokasi.';
+      else if (err && err.code === 2) pesan = 'Posisi tidak tersedia saat ini (bukan soal izin) — coba lagi sebentar lagi, atau pastikan GPS/WiFi perangkat aktif.';
+      else if (err && err.code === 3) pesan = 'Permintaan lokasi timeout (bukan soal izin) — sinyal GPS/WiFi mungkin lemah di lokasi ini, coba lagi.';
+      toast(pesan, true);
+      setCheck('chkGps', false, true);
+    },
     { enableHighAccuracy: true, timeout: BATAS_WAKTU_MS, maximumAge: 0 }
   );
 }
@@ -821,6 +851,7 @@ async function loginBiometrik() {
     });
     const hash = await sha256Hex(secretRaw);
     const data = await call('loginBiometrik', { credential_id: credId, device_token_hash: hash });
+    if (!data || !data.token || !data.pegawai) throw new Error('Respons server tidak lengkap. Coba lagi.');
     token = data.token; user = data.pegawai;
     localStorage.setItem('sh_token', token);
     localStorage.setItem('sh_user', JSON.stringify(user));
@@ -831,6 +862,12 @@ async function loginBiometrik() {
 }
 
 // ---------- init ----------
+// Jaga-jaga: token ada tapi data pegawai korup (atau sebaliknya) -> bersihkan semua,
+// paksa login ulang, daripada aplikasi berjalan setengah-setengah dengan data yang tidak lengkap.
+if ((token && !user) || (!token && user)) {
+  localStorage.removeItem('sh_token'); localStorage.removeItem('sh_user');
+  token = null; user = null;
+}
 cekTampilkanTombolBiometrikLogin();
 if (token && user) {
   if (user.role === 'admin') { window.location.href = 'admin.html'; }
