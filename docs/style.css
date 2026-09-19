@@ -25,6 +25,8 @@
   --purple-bg:rgba(139,92,246,0.14);
   --header-bg:rgba(10,17,32,0.85);
   --wallpaper-tint:rgba(8,14,28,0.88);
+  --cam-bg:#050810;
+  --cam-overlay:rgba(5,8,16,0.92);
   --radius:14px;
   --radius-sm:10px;
 
@@ -62,6 +64,8 @@
   --purple-bg:rgba(109,40,217,0.10);
   --header-bg:rgba(255,255,255,0.82);
   --wallpaper-tint:rgba(241,244,249,0.90);
+  --cam-bg:#E7ECF3;
+  --cam-overlay:rgba(255,255,255,0.93);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 body{
