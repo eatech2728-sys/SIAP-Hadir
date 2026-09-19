@@ -2,7 +2,7 @@
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // (harus SAMA PERSIS dengan yang dipakai di app.js)
 // ============================================================
-const API_BASE = 'Phttps://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
 
 // ---------- tema (terang/gelap/otomatis) ----------
 function terapkanTema(pref) {
