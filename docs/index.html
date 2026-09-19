@@ -95,11 +95,11 @@
 
   .section-label{ font-size:12px; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 
-  .cam-card{ position:relative; background:#050810; border-radius:var(--radius); overflow:hidden; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; border:1px solid var(--border-soft); }
+  .cam-card{ position:relative; background:var(--cam-bg); border-radius:var(--radius); overflow:hidden; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; border:1px solid var(--border-soft); }
   .cam-card video, .cam-card canvas, .cam-card img{ width:100%; height:100%; object-fit:cover; }
   .cam-card video{ transform:scaleX(-1); } /* pratinjau dicerminkan spt cermin asli — foto yg TERSIMPAN tetap orientasi normal, ini cuma tampilan */
   .cam-hint{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); color:#fff; font-size:11px; background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:20px; z-index:2; }
-  .cam-lock{ position:absolute; inset:0; background:rgba(5,8,16,0.92); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:12px; z-index:3; }
+  .cam-lock{ position:absolute; inset:0; background:var(--cam-overlay); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:12px; z-index:3; }
   .cam-lock-icon{ width:48px; height:48px; border-radius:50%; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--text-sec); }
   .cam-lock-icon svg{ width:22px; height:22px; }
   .cam-lock-title{ font-size:14px; font-weight:700; }
@@ -184,7 +184,7 @@
   .face-status{ display:flex; align-items:center; gap:10px; padding:12px; border-radius:var(--radius-sm); background:var(--surface-2); border:1px solid var(--border); margin-bottom:12px; font-size:12.5px; }
   .face-status .ic{ width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--border); color:var(--text-sec); }
   .face-status.ok .ic{ background:var(--success-bg); color:var(--success); }
-  .face-wrap{ background:#050810; border-radius:var(--radius); overflow:hidden; position:relative; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .face-wrap{ background:var(--cam-bg); border-radius:var(--radius); overflow:hidden; position:relative; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
   .face-wrap video, .face-wrap canvas{ width:100%; height:100%; object-fit:cover; }
   .face-wrap video{ transform:scaleX(-1); }
   .face-msg{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); color:#fff; font-size:11.5px; background:rgba(0,0,0,0.5); padding:6px 14px; border-radius:20px; text-align:center; }
