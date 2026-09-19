@@ -2,7 +2,7 @@
 // GANTI URL DI BAWAH INI dengan Web App URL Apps Script Anda
 // (harus SAMA PERSIS dengan yang dipakai di app.js)
 // ============================================================
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
+const API_BASE = 'Phttps://script.google.com/macros/s/AKfycbyTc2ZebcADtl7aR48puMf-xLnQ24VgJahSpoDbwn3dpbF1xICFBOK16rZPTkcUyQHG/exec';
 
 // ---------- tema (terang/gelap/otomatis) ----------
 function terapkanTema(pref) {
@@ -29,8 +29,23 @@ function initTema() {
 }
 initTema();
 
+function amanAmbilLocalStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw || raw === 'undefined' || raw === 'null') return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
 let token = localStorage.getItem('sh_token') || null;
-let user = JSON.parse(localStorage.getItem('sh_user') || 'null');
+let user = amanAmbilLocalStorage('sh_user');
+if ((token && !user) || (!token && user)) {
+  localStorage.removeItem('sh_token'); localStorage.removeItem('sh_user');
+  token = null; user = null;
+}
 
 function call(action, payload = {}) {
   if (!API_BASE || API_BASE.indexOf('PASTE_URL') === 0) {
@@ -75,6 +90,7 @@ function login() {
 
   call('login', { nip, password: pass })
     .then(data => {
+      if (!data || !data.token || !data.pegawai) throw new Error('Respons server tidak lengkap. Coba lagi.');
       if (data.pegawai.role !== 'admin') {
         errEl.textContent = 'Akun ini bukan admin. Gunakan aplikasi pegawai.';
         errEl.classList.remove('hidden');
