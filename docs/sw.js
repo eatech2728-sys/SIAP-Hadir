@@ -1,6 +1,6 @@
-const CACHE_NAME = 'siap-hadir-v1';
+const CACHE_NAME = 'siap-hadir-v2';
 const APP_SHELL = ['./', './index.html', './admin.html', './style.css', './app.js', './admin.js', './chat.js',
-  './firebase-config.js', './manifest.json', './icon-192.png', './icon-512.png', './favicon-32.png'];
+  './firebase-config.js', './manifest.json', './icon-192.png', './icon-512.png', './favicon-32.png', './intro.mp3'];
 const BYPASS = ['script.google.com', 'script.googleusercontent.com', 'googleapis.com', 'firebaseio.com', 'firebasedatabase.app'];
 
 self.addEventListener('install', e => {
