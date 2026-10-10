@@ -20,14 +20,14 @@
   "screenshots": [
     {
       "src": "screenshot/screenshot-mobile.png",
-      "sizes": "1080x1920",
+      "sizes": "501x923",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Halaman Utama Presensi Mobile - SIAP-Hadir"
     },
     {
       "src": "screenshot/screenshot-desktop.png",
-      "sizes": "1920x1080",
+      "sizes": "1227x1032",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Dashboard Presensi Desktop - SIAP-Hadir"
