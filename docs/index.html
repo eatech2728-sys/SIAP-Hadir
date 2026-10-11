@@ -285,6 +285,8 @@ if(document.readyState==="complete")done();else window.addEventListener("load",d
         <option value="dark">🌙 Gelap</option>
       </select>
 
+      <button type="button" id="tombolSuara" class="pill" style="padding:6px 10px; cursor:pointer; font-family:inherit;" aria-label="Suara notifikasi">🔊</button>
+
       <div class="header-tabs">
         <button class="header-tab active" data-tab="presensi" onclick="goTo('presensi')">Presensi</button>
         <button class="header-tab" data-tab="riwayat" onclick="goTo('riwayat')">Riwayat</button>
@@ -657,6 +659,7 @@ if(document.readyState==="complete")done();else window.addEventListener("load",d
 
 <script src="app.js"></script>
 <script src="chat.js"></script>
+<script src="sfx.js"></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </body>
 </html>
